@@ -12,6 +12,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const NavigateToDashboard = () => {
     navigate("/dashboard");
@@ -21,6 +22,14 @@ function Login() {
     e.preventDefault();
 
     try {
+      setLoading(true);
+      if (!email || !password) {
+        toast.error("Please enter both email and password.");
+
+        setLoading(false);
+        return;
+      }
+
       const q = query(
         collection(db, "StudentAccount"),
         where("email", "==", email),
@@ -31,12 +40,15 @@ function Login() {
 
       if (!querySnapshot.empty) {
         navigate("/dashboard");
+        setLoading(false);
       } else {
+        setLoading(false);
         toast.error("Invalid credentials.");
       }
     } catch (err) {
+      setLoading(false);
       console.error("Login error:", err);
-      toast.error("An error occurred during login.");
+      toast.error(`Login failed: ${err.message}`);
     }
   };
 
@@ -76,8 +88,17 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <div className="w-full flex justify-end">
+              <div className="cursor-pointer">Forgot Password?</div>
+            </div>
             <button className="bg-blue-600 mt-6 rounded-md py-4 hover:bg-blue-700 transition-all  px-4 text-white font-semibold">
-              Log In
+              {loading ? (
+                <div className="flex justify-center">
+                  <div className="border-r-2 border-white h-6 w-6 rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div>Log In</div>
+              )}
             </button>
           </form>
         </div>

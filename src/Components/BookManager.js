@@ -45,7 +45,7 @@ function BookManager() {
                     </div>
 
                     <div className='w-full mt-5 p-10 rounded-md bg-white shadow-md'>
-                        <div className='flex justify-between uppercase border-b pb-3 px-5 text-lg'>
+                        <div className='flex justify-between uppercase border-b pb-3 text-lg'>
                             <div>Student Name</div>
                             
                             <div className='flex gap-10 uppercase'>

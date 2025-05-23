@@ -28,20 +28,22 @@ function Analytics() {
   ];
 
   return (
-    <div className="p-10 h-screen overflow-hidden">
+    <div className="p-10 h-[calc(100vh-1px)] overflow-hidden">
       <div className="w-full p-10 flex flex-col h-full bg-blue-700 rounded-xl">
         <div className="text-2xl font-kanit">
           <div className="text-white text-3xl uppercase">Dashboard</div>
         </div>
         <div className="mt-10">
           <div className="w-full p-4 bg-white relative rounded-2xl shadow-md">
-            <div className="absolute top-6 right-8">
-              <div className="bg-gray-200 px-8 cursor-pointer rounded-md shadow-md py-2">Library Usage by Students </div>
+            <div className="flex justify-between items-center px-10">
+              <h2 className="text-2xl font-semibold text-center uppercase font-kanit my-4">
+                Library Usage by Students
+              </h2>
+              <div className="bg-gray-200  text-left px-8 cursor-pointer rounded-md shadow-md py-2">
+                Library Usage by Students
+              </div>
             </div>
-            <h2 className="text-2xl font-semibold text-center uppercase font-kanit my-4">
-              Library Usage by Students
-            </h2>
-            <div className="w-full h-[300px]">
+            <div className="w-full h-[calc(100vh-600px)]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={data}
@@ -51,18 +53,18 @@ function Analytics() {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#A76545" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
-        <div className="mt-5 gap-5 flex h-full">
-          <div className="bg-white p-5 flex flex-col rounded-2xl w-1/2 font-serif">
+        <div className="mt-5 gap-5 flex flex-grow min-h-0">
+          <div className="bg-white p-5 flex flex-col rounded-2xl w-1/2 font-serif min-h-0">
             <div className="text-center font-kanit text-xl uppercase">
               Most Recent Student
             </div>
-            <div className="flex max-h-[200px] mt-2  overflow-y-auto gap-5 flex-col overflow-x-auto overflow-auto">
+            <div className="flex-1 mt-2 overflow-y-auto gap-5 flex flex-col">
               <motion.div
                 className="py-5 flex justify-between shadow-md px-16 bg-blue-500 text-white font-kanit rounded-xl text-lg"
                 initial={{ y: 300 }}
@@ -114,11 +116,11 @@ function Analytics() {
               </div>
             </div>
           </div>
-          <div className="bg-white p-5 flex flex-col rounded-2xl w-1/2 font-serif">
+          <div className="bg-white p-5 flex flex-col rounded-2xl w-1/2 font-serif min-h-0">
             <div className="text-center font-kanit text-xl uppercase">
               Student Who Just Logged Out
             </div>
-            <div className="flex max-h-[200px] mt-2  overflow-y-auto gap-5 flex-col overflow-x-auto overflow-auto">
+            <div className="flex-1 mt-2 overflow-y-auto gap-5 flex flex-col">
               <motion.div
                 className="py-5 flex justify-between shadow-md px-16 bg-blue-500 text-white font-kanit rounded-xl text-lg"
                 initial={{ y: 300 }}

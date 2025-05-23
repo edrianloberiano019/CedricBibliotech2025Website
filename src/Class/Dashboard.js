@@ -3,21 +3,22 @@ import Sidebar from "../Components/Sidebar";
 import Analytics from "../Components/Analytics";
 import Reports from "../Components/Reports";
 import BookManager from "../Components/BookManager";
-import TableManager from "../Components/TableManager";
-import ComputerManager from "../Components/ComputerManager";
+import TableManager from "../Trash/TableManager";
+import ComputerManager from "../Trash/ComputerManager";
 import Admin from "../Components/Admin";
 import Borrowing from "../Components/Borrowing";
 import Settings from "../Components/Settings";
+import BackLog from "../Components/BackLog";
 
 function Dashboard() {
   const [selectedPage, setSelectedPage] = useState("dashboard");
   return (
     <div>
-      <div className="flex flex-row h-screen">
-        <div className="w-1/4 h-screen">
+      <div className="xl:flex hidden  flex-row h-[calc(100vh-0px)]">
+        <div className="w-1/4 h-[calc(100vh-64px)]">
           <Sidebar setSelectedPage={setSelectedPage} />
         </div>
-        <div className="w-3/4">
+        <div className="w-3/4 ">
           {selectedPage === "dashboard" && (
             <h1 className=" w-full overflow-hidden">
               <Analytics setSelectedPage={setSelectedPage} />
@@ -64,7 +65,16 @@ function Dashboard() {
               <BookManager />
             </h1>
           )}
+
+          {selectedPage === "blog" && (
+            <h1 className=" w-full overflow-hidden">
+              <BackLog />
+            </h1>
+          )}
         </div>
+      </div>
+      <div className="flex xl:hidden w-full h-screen justify-center items-center">
+          <div>This Page is not ready for a smaller resolution. Please use desktop view to access this page.</div>
       </div>
     </div>
   );
