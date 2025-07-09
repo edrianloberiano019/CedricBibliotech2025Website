@@ -52,7 +52,7 @@ function Sidebar({ setSelectedPage }) {
                     clip-rule="evenodd"
                   />
                 </svg>
-                <div className="text-left ">Dashboard</div>
+                <div className="text-left text-sm xl:text">Dashboard</div>
               </motion.div>
             </button>
           </div>
@@ -86,7 +86,7 @@ function Sidebar({ setSelectedPage }) {
               </svg>
 
               <div className="flex flex-row justify-between items-center content w-full">
-                <div className="">
+                <div className="text-base">
                   <div>Book Manager</div>
                 </div>
 

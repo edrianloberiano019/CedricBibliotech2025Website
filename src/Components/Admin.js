@@ -1,5 +1,5 @@
 import { useScroll } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { db } from "../firebase";
 import { collection, addDoc, setDoc, doc } from "firebase/firestore";
@@ -21,6 +21,7 @@ function Admin() {
   const [studentnumber, setStudentNumber] = useState("02000");
   const [confirmpassword, setConfirmPassword] = useState("");
   const [accessLevel, setAccessLevel] = useState("Select access level");
+
   const handleChange = (e) => {
     const studentnumber = e.target.value;
     if (/^\d*$/.test(studentnumber)) {
@@ -34,6 +35,12 @@ function Admin() {
       setAge(age);
     }
   };
+
+  // const settingsForAccessLevel = () => {
+  //   setAccessLevel["Admin", "Student"]
+  // }
+
+  // useEffect(() => {}, []);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -286,7 +293,9 @@ function Admin() {
                     <div className=" bg-white w-full rounded-md overflow-hidden flex justify-start flex-col">
                       <div
                         onClick={() => {
-                            setAccessLevel('Admin')
+                          setAccessLevel("Admin");
+                          setGrade("Select grade level");
+                          setYear("Select year level")
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -294,7 +303,9 @@ function Admin() {
                       </div>
                       <div
                         onClick={() => {
-                            setAccessLevel('Staff')
+                          setAccessLevel("Staff");
+                          setGrade("Select grade level");
+                          setYear("Select year level")
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -302,7 +313,7 @@ function Admin() {
                       </div>
                       <div
                         onClick={() => {
-                            setAccessLevel('Student')
+                          setAccessLevel("Student");
                         }}
                         className="px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "
                       >
@@ -369,7 +380,7 @@ function Admin() {
                           setGrade("College");
                           setYear("Select year level");
                         }}
-                        className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
+                        className={`" ${accessLevel === "Admin" || accessLevel === "Staff" ? 'hidden' : ''} px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "`}
                       >
                         College
                       </div>
@@ -378,7 +389,7 @@ function Admin() {
                           setGrade("Senior High");
                           setYear("Select year level");
                         }}
-                        className="px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "
+                        className={`" ${accessLevel === "Admin" || accessLevel === "Staff" ? 'hidden' : ''}  px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "`}
                       >
                         Senior High
                       </div>

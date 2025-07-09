@@ -14,7 +14,7 @@ function Dashboard() {
   const [selectedPage, setSelectedPage] = useState("dashboard");
   return (
     <div>
-      <div className="xl:flex hidden  flex-row h-[calc(100vh-0px)]">
+      <div className="flex flex-row h-[calc(100vh-0px)]">
         <div className="w-1/4 h-[calc(100vh-64px)]">
           <Sidebar setSelectedPage={setSelectedPage} />
         </div>
@@ -72,9 +72,6 @@ function Dashboard() {
             </h1>
           )}
         </div>
-      </div>
-      <div className="flex xl:hidden w-full h-screen justify-center items-center">
-          <div>This Page is not ready for a smaller resolution. Please use desktop view to access this page.</div>
       </div>
     </div>
   );
