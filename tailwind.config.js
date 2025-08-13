@@ -7,6 +7,7 @@ module.exports = {
       extend: {
         fontFamily: {
           kanit: ['Kanit', "sans-serif"],
+          Anton: ['Anton', "sans-serif"],
         }
       },
     },

@@ -9,72 +9,38 @@ import Admin from "../Components/Admin";
 import Borrowing from "../Components/Borrowing";
 import Settings from "../Components/Settings";
 import BackLog from "../Components/BackLog";
+import Example from "../Components/Example";
+import EntranceSystem from "./EntanceSystem";
+
 
 function Dashboard() {
   const [selectedPage, setSelectedPage] = useState("dashboard");
+
   return (
-    <div>
-      <div className="flex flex-row h-[calc(100vh-0px)]">
-        <div className="w-1/4 h-[calc(100vh-64px)]">
-          <Sidebar setSelectedPage={setSelectedPage} />
-        </div>
-        <div className="w-3/4 ">
-          {selectedPage === "dashboard" && (
-            <h1 className=" w-full overflow-hidden">
-              <Analytics setSelectedPage={setSelectedPage} />
-            </h1>
-          )}
-          {selectedPage === "reports" && (
-            <h1 className=" w-full overflow-hidden">
-              <Reports />
-            </h1>
-          )}
-          {selectedPage === "bookmanager" && (
-            <h1 className=" w-full overflow-hidden">
-              <BookManager />
-            </h1>
-          )}
-          {selectedPage === "computeravailability" && (
-            <h1 className=" w-full overflow-hidden">
-              <ComputerManager />
-            </h1>
-          )}
-          {selectedPage === "tablemanager" && (
-            <h1 className=" w-full overflow-hidden">
-              <TableManager />
-            </h1>
-          )}
-          {selectedPage === "admin" && (
-            <h1 className=" w-full overflow-hidden">
-              <Admin />
-            </h1>
-          )}
-          {selectedPage === "borrowing" && (
-            <h1 className=" w-full overflow-hidden">
-              <Borrowing />
-            </h1>
-          )}
-          {selectedPage === "settings" && (
-            <h1 className=" w-full overflow-hidden">
-              <Settings />
-            </h1>
-          )}
+    <div className="flex flex-row bg-gradient-to-r from-[#f5b066] via-[#d6f566] to-[#259048] h-screen">
+      <div className="w-1/4 h-full">
+        <Sidebar setSelectedPage={setSelectedPage} />
+      </div>
 
-          {selectedPage === "bookm" && (
-            <h1 className=" w-full overflow-hidden">
-              <BookManager />
-            </h1>
-          )}
-
-          {selectedPage === "blog" && (
-            <h1 className=" w-full overflow-hidden">
-              <BackLog />
-            </h1>
-          )}
-        </div>
+      <div className="w-3/4 h-full overflow-hidden">
+        {selectedPage === "dashboard" && (
+          <Analytics setSelectedPage={setSelectedPage} />
+        )}
+        {selectedPage === "reports" && <Reports />}
+        {selectedPage === "bookmanager" && <BookManager />}
+        {selectedPage === "computeravailability" && <ComputerManager />}
+        {selectedPage === "tablemanager" && <TableManager />}
+        {selectedPage === "admin" && <Admin />}
+        {selectedPage === "borrowing" && <Borrowing />}
+        {selectedPage === "settings" && <Settings />}
+        {selectedPage === "bookm" && <BookManager />}
+        {selectedPage === "blog" && <BackLog />}
+        {selectedPage === "example" && <Example />}
+        {selectedPage === "entrance" && <EntranceSystem  />}
       </div>
     </div>
   );
 }
+
 
 export default Dashboard;

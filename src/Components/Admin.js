@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { db } from "../firebase";
 import { collection, addDoc, setDoc, doc } from "firebase/firestore";
 import { toast } from "react-toastify";
+import { ClipLoader } from "react-spinners";
 
 function Admin() {
   const [value, setValue] = useState("");
@@ -21,6 +22,28 @@ function Admin() {
   const [studentnumber, setStudentNumber] = useState("02000");
   const [confirmpassword, setConfirmPassword] = useState("");
   const [accessLevel, setAccessLevel] = useState("Select access level");
+  const [scanID, setScanID] = useState(false);
+
+  const [permission, setPermission] = useState("Access Granted");
+  const [uid, setUid] = useState("card");
+
+  useEffect(() => {
+    const fetchUID = async () => {
+      try {
+        const res = await fetch("http://192.168.254.100/uid");
+        const data = await res.json();
+        if (data.uid) {
+          setUid(data.uid.toUpperCase());
+        }
+      } catch (err) {
+        console.error(err);
+        setUid("Error connecting to ESP");
+      }
+    };
+
+    const interval = setInterval(fetchUID, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleChange = (e) => {
     const studentnumber = e.target.value;
@@ -42,13 +65,21 @@ function Admin() {
 
   // useEffect(() => {}, []);
 
+  const confirmationScanning = (e) => {
+    e.preventDefault();
+    setScanID(true);
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
 
     if (password === confirmpassword) {
       if (password.length > 6) {
         if (age >= 16) {
-          if (grade !== "Select grade level" && year !== "Select year level") {
+          if (
+            (grade !== "Select grade level" && year !== "Select year level") ||
+            accessLevel === "Admin"
+          ) {
             if (studentnumber.length >= 10) {
               try {
                 await setDoc(doc(db, "StudentAccount", studentnumber), {
@@ -61,9 +92,23 @@ function Admin() {
                   age: age,
                   yearlevel: year,
                   gradelevel: grade,
+                  setPermission: permission,
+                  cardUID: uid,
+                  accessLevel: accessLevel
                 });
 
+                const response = await fetch(
+                  `http://192.168.254.100/write?accesslevel=${accessLevel}&permission=${permission}`
+                );
+                const result = await response.json();
+                if (result.status && result.status.includes("Ready")) {
+                } else {
+                  toast.error("Card write failed!");
+                  return;
+                }
+
                 toast.success("User successfully registered!");
+                setScanID(false);
                 setEmail("");
                 setPassword("");
                 setAge("");
@@ -96,15 +141,17 @@ function Admin() {
   };
 
   return (
-    <div className="p-10 h-screen overflow-hidden">
-      <div className="w-full p-10 flex flex-col h-full bg-blue-700 rounded-xl">
+    <motion.div className="p-10 h-screen overflow-hidden"
+    initial={{x: 100, opacity: 0}}
+    animate={{x: 0, opacity: 1}}>
+      <div className="w-full relative p-10 flex flex-col h-full bg-[#c0772a] rounded-xl">
         <div className="text-2xl font-kanit">
           <div className="text-white text-3xl uppercase">
-            Student Registration
+            Account Registration
           </div>
         </div>
         <form
-          onSubmit={handleRegister}
+          onSubmit={confirmationScanning}
           className="mt-10 flex h-full flex-col justify-between text-xl text-white"
         >
           <div className="flex flex-col">
@@ -154,7 +201,7 @@ function Admin() {
             <div className="flex gap-10 mt-5">
               <div className="w-full">
                 <div className="flex gap-2">
-                  <div>Student Number: </div>
+                  <div>Id Number: </div>
                   <div className="text-red-500">*</div>
                 </div>
                 <input
@@ -240,7 +287,7 @@ function Admin() {
 
               <div className="flex gap-10">
                 <div className="overflow-hidden pb-5">
-                  <div className="bg-blue-700 relative z-20 ">
+                  <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
                       <div>Select Access Level: </div>
                       <div className="text-red-500">*</div>
@@ -295,7 +342,7 @@ function Admin() {
                         onClick={() => {
                           setAccessLevel("Admin");
                           setGrade("Select grade level");
-                          setYear("Select year level")
+                          setYear("Select year level");
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -305,7 +352,7 @@ function Admin() {
                         onClick={() => {
                           setAccessLevel("Staff");
                           setGrade("Select grade level");
-                          setYear("Select year level")
+                          setYear("Select year level");
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -323,8 +370,8 @@ function Admin() {
                   </motion.div>
                 </div>
 
-                <div className="overflow-hidden pb-5">
-                  <div className="bg-blue-700 relative z-20 ">
+                <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
+                  <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
                       <div>Select Grade Level: </div>
                       <div className="text-red-500">*</div>
@@ -380,7 +427,11 @@ function Admin() {
                           setGrade("College");
                           setYear("Select year level");
                         }}
-                        className={`" ${accessLevel === "Admin" || accessLevel === "Staff" ? 'hidden' : ''} px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "`}
+                        className={`" ${
+                          accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level"
+                            ? "hidden"
+                            : ""
+                        } px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "`}
                       >
                         College
                       </div>
@@ -389,7 +440,11 @@ function Admin() {
                           setGrade("Senior High");
                           setYear("Select year level");
                         }}
-                        className={`" ${accessLevel === "Admin" || accessLevel === "Staff" ? 'hidden' : ''}  px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "`}
+                        className={`" ${
+                          accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level"
+                            ? "hidden"
+                            : ""
+                        }  px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "`}
                       >
                         Senior High
                       </div>
@@ -397,8 +452,8 @@ function Admin() {
                   </motion.div>
                 </div>
 
-                <div className="overflow-hidden pb-5">
-                  <div className="bg-blue-700 relative z-20 ">
+                <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
+                  <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
                       <div>Select Year Level: </div>
                       <div className="text-red-500">*</div>
@@ -515,10 +570,57 @@ function Admin() {
             >
               save
             </button>
+            <div onClick={() => setScanID(true)}>dsa</div>
           </div>
         </form>
+        {scanID ? (
+          <div className="absolute top-0 left-0 justify-center flex items-center w-full h-full z-20 ">
+            <div
+              onClick={() => setScanID(false)}
+              className="absolute cursor-pointer rounded-xl top-0 left-0 z-10 bg-[#0007] w-full h-full"
+            ></div>
+            <div className="bg-white w-[50%] rounded-xl p-10 z-20">
+              <div className="mb-5 w-full justify-center flex flex-col content-center ">
+                <div className="text-4xl font-black uppercase text-center">
+                  Tap your id
+                </div>
+                <div className="text-sm mb-5 text-gray-500 text-center">
+                  Make sure to tap the correct id.
+                </div>
+              </div>
+              <div>
+                Name: {firstname} {middlename} {lastname}
+              </div>
+              <div>Student ID: {studentnumber}</div>
+              {uid === "card" ? (
+                <div className="flex items-center">
+                  <div className="mr-2">Card code:</div>{" "}
+                  <ClipLoader size={20} />
+                </div>
+              ) : (
+                <div>Card code: {uid}</div>
+              )}
+              <div className="mt-3 w-full flex justify-end gap-3 text-white ">
+                <div
+                  onClick={() => setScanID(false)}
+                  className="px-5 py-1 bg-red-700 hover:bg-red-800 cursor-pointer rounded-md shadow-md "
+                >
+                  No
+                </div>
+                <div
+                  onClick={handleRegister}
+                  className="px-5 py-1 bg-green-700 hover:bg-green-800 rounded-md cursor-pointer shadow-md "
+                >
+                  Yes
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div></div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

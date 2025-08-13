@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import PeopleBackground from "../Images/LoginBackgroundSTILOGO.png";
+import PeopleBackground from "../Images/logobg.png";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { toast } from "react-toastify";
@@ -13,10 +13,6 @@ function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
-  const NavigateToDashboard = () => {
-    navigate("/dashboard");
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -39,11 +35,26 @@ function Login() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        navigate("/dashboard");
-        setLoading(false);
+        const userData = querySnapshot.docs[0].data();
+
+        localStorage.setItem("user", JSON.stringify(userData));
+
+        if (
+          userData.accessLevel === "Admin" ||
+          userData.accessLevel === "Staff"
+        ) {
+          navigate("/dashboard");
+          setLoading(false);
+        } else if (userData.accessLevel === "Student") {
+          setLoading(false);
+          toast.error("Student account is not allowed to this portal.");
+        } else {
+          setLoading(false);
+          toast.error("Unknown access level! sino ka?")
+        }
       } else {
         setLoading(false);
-        toast.error("Invalid credentials.");
+        toast.error("Invalid credentials. Please check your email and password.");
       }
     } catch (err) {
       setLoading(false);
@@ -60,7 +71,7 @@ function Login() {
           src={PeopleBackground}
           alt="walking people"
         />
-        <div className="bg-blue-600 bg-opacity-80 backdrop-blur-sm absolute top-0 left-0 w-full h-full"></div>
+        <div className="bg-[#f5b066] bg-opacity-80 backdrop-blur-sm absolute top-0 left-0 w-full h-full"></div>
       </div>
       <div className="absolute flex flex-row top-0 w-full  h-full justify-center content-center items-center ">
         <div className="h-[400px] flex flex-row w-full justify-center content-center items-center">
@@ -91,7 +102,7 @@ function Login() {
             <div className="w-full flex justify-end">
               <div className="cursor-pointer">Forgot Password?</div>
             </div>
-            <button className="bg-blue-600 mt-6 rounded-md py-4 hover:bg-blue-700 transition-all  px-4 text-white font-semibold">
+            <button disabled={loading} className={`" ${loading ? "bg-gray-300 cursor-not-allowed" : "hover:bg-[#c0772a] cursor-pointer"} bg-[#f5b066] mt-6 rounded-md py-4  transition-all  px-4 text-black hover:text-white font-semibold "`}>
               {loading ? (
                 <div className="flex justify-center">
                   <div className="border-r-2 border-white h-6 w-6 rounded-full animate-spin"></div>

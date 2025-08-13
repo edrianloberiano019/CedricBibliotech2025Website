@@ -1,12 +1,123 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  setDoc,
+  addDoc,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { toast } from "react-toastify";
+import { SyncLoader } from "react-spinners";
 
 function Borrowing() {
   const [modalBorrow, setModalBorrow] = useState(false);
   const [modalView, setModalView] = useState(false);
+  const [modalTap, setModalTap] = useState(false);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [document, setDocumentID] = useState("");
+  const [choseDate, setChoseDate] = useState("");
+  const [choseTime, setChoseTime] = useState("");
+  const [update, setUpdate] = useState(false);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, "BooksData"));
+        const studentData = querySnapshot.docs.map((doc) => doc.data());
+        setBooks(studentData);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+    setUpdate(false);
+  }, [update]);
+
+  const updateReturn = async () => {
+    const userRef = doc(db, "BooksData", document);
+
+    try {
+      await updateDoc(userRef, {
+        status: "Available",
+        dateReturn: "",
+        dateBorrowed: "",
+      });
+      updateHistoryReturn();
+      toast.success("Successfully returned!");
+    } catch (error) {
+      toast.error("Error updating document: ", error);
+    }
+  };
+
+  const updateNext = async () => {
+    const dateObj = new Date(`${choseDate}T${choseTime}`);
+    const userRef = doc(db, "BooksData", document);
+    const userRef2 = collection(db, "BooksHistory");
+    const now = new Date();
+
+    if (choseDate && choseTime) {
+      toast("maylaman");
+    } else {
+      toast("wala laman");
+    }
+
+    // try {
+    //   await updateDoc(userRef, {
+    //     status: "Borrowed",
+    //     dateReturn: dateObj,
+    //     dateBorrowed: now,
+    //   });
+
+    //   await addDoc(userRef2, {
+    //     status: `Edrian borrowed the book named "${document}"`,
+    //   });
+    //   setModalTap(false);
+    //   toast.success("Successfully borrowed!");
+    // } catch (error) {
+    //   toast.error("Error updating document: ", error);
+    // } finally {
+    //   setChoseDate("");
+    //   setChoseTime("");
+    //   setUpdate(true);
+    // }
+  };
+
+  const updateHistoryReturn = async () => {
+    const userRef2 = collection(db, "BooksHistory");
+    const now = new Date();
+
+    try {
+      await addDoc(userRef2, {
+        status: `Edrian returned the book named "${document}"`,
+      });
+      setModalTap(false);
+    } catch (error) {
+      toast.error("Error updating document: ", error);
+    }
+  };
+
+  const next = () => {
+    if (choseDate && choseTime) {
+      setModalTap(true);
+      setModalBorrow(false);
+    } else {
+      toast.error("Please select date and time to proceed.");
+    }
+  };
+
   return (
-    <div className="p-10 h-[calc(100vh-1px)] overflow-hidden">
-      <div className="w-full p-10 flex flex-col h-full relative bg-blue-700 overflow-hidden rounded-xl">
+    <motion.div className="p-10 h-[calc(100vh-1px)] overflow-hidden"
+    initial={{x: 100, opacity: 0}}
+    animate={{x: 0, opacity: 1}}>
+      <div className="w-full p-10 flex flex-col h-full relative bg-[#c0772a] overflow-hidden rounded-xl">
         <div className="mb-10">
           <div className="text-white text-3xl font-kanit uppercase">
             Borrowing
@@ -36,49 +147,78 @@ function Borrowing() {
             </div>
           </div>
 
-          <div className="w-full mt-5 p-10 rounded-md bg-white shadow-md">
+          
+
+          <div className="w-full mt-5 p-10 rounded-md bg-white  transition-all shadow-md">
             <div className="flex justify-between uppercase border-b pb-3 text-lg">
               <div className="grid grid-cols-8 w-full grid-flow-col  gap-6 uppercase">
-                <div className=" col-span-3">Book Title</div>
+                <div className=" col-span-2">Book Title</div>
 
                 <div>Status</div>
                 <div>Author</div>
-                <div>Category</div>
+                <div className="col-span-2">Category</div>
                 <div>Year</div>
               </div>
             </div>
             <div className="mt-2 grid gap-1">
-              <div className="flex justify-between text-lg">
-                <div className="grid grid-cols-8 w-full grid-flow-col items-center justify-center gap-6 ">
-                  <div className="col-span-3">Noli Me Tangere</div>
-                  <div className="text-green-600 font-semibold">Available</div>
-                  <div className="text-ellipsis truncate">Jose Rizal</div>
-                  <div>Fiction</div>
-                  <div>1887</div>
-                  <div
-                    onClick={() => setModalBorrow(true)}
-                    className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-green-700 hover:bg-green-800 transition-all rounded-md shadow-md"
-                  >
-                    Borrow
-                  </div>
+              {loading ? (
+                <div className="w-full py-10 justify-center items-center content-center flex ">
+                  <SyncLoader size={10} />
                 </div>
-              </div>
-
-              <div className="flex justify-between  text-lg">
-                <div className="grid grid-cols-8 w-full grid-flow-col items-center justify-center gap-6 ">
-                  <div className="col-span-3">El Filibusterismo</div>
-                  <div className="text-red-600 font-semibold">Borrowed</div>
-                  <div className="text-ellipsis truncate">Jose Rizal</div>
-                  <div>Fiction</div>
-                  <div>1891</div>
-                  <div
-                    onClick={() => setModalView(true)}
-                    className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-blue-700 hover:bg-blue-800 transition-all rounded-md shadow-md"
-                  >
-                    view
-                  </div>
+              ) : (
+                <div className="flex flex-col gap-y-2 justify-between  text-lg">
+                  {books.map((book, index) => (
+                    <motion.div
+                      key={index}
+                      className="grid grid-cols-8 w-full grid-flow-col items-center justify-center gap-6 "
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <div className="col-span-2">{book.title}</div>
+                      <div>
+                        {book.status === "Borrowed" ? (
+                          <div className="text-red-600 font-bold">Borrowed</div>
+                        ) : (
+                          <div className="text-green-600 font-bold">
+                            Available
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-ellipsis truncate">
+                        {book.author}
+                      </div>
+                      <div className="text-ellipsis truncate col-span-2">
+                        {book.category}
+                      </div>
+                      <div>{book.year}</div>
+                      <div>
+                        {book.status === "Available" ? (
+                          <div
+                            onClick={() => {
+                              setModalBorrow(true);
+                              setDocumentID(book.title);
+                            }}
+                            className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-green-700 hover:bg-green-800 transition-all rounded-md shadow-md"
+                          >
+                            borrow
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => {
+                              setModalView(true);
+                              setDocumentID(book.title);
+                            }}
+                            className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-blue-700 hover:bg-blue-800 transition-all rounded-md shadow-md"
+                          >
+                            view
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -92,19 +232,89 @@ function Borrowing() {
               exit={{ opacity: 0 }}
             >
               <div
-                onClick={() => setModalBorrow(false)}
+                onClick={() => {
+                  setModalBorrow(false);
+                  setChoseDate("");
+                  setChoseTime("");
+                }}
                 className="z-30 bg-[#00000094] cursor-pointer backdrop-blur-sm w-full h-full absolute "
               ></div>
               <div className="bg-white relative z-40 p-5 rounded-2xl shadow-xl">
-                <div className="bg-blue-700 p-4 rounded-md shadow-xl text-white">
+                <div className="bg-[#f5b066] p-4 rounded-md shadow-xl text-black">
                   <div className="text-sm">Schedule to Return: </div>
-                  <input type="date" className="rounded-lg focus:outline-none text-black px-8 py-1 text-lg" />
+                  <input
+                    type="date"
+                    className="rounded-lg focus:outline-none text-black px-8 py-1 text-lg"
+                    value={choseDate}
+                    onChange={(e) => setChoseDate(e.target.value)}
+                  />
+                  <input
+                    type="time"
+                    className="rounded-lg ml-4 focus:outline-none text-black px-8 py-1 text-lg"
+                    value={choseTime}
+                    onChange={(e) => setChoseTime(e.target.value)}
+                  />
                   <div className="mt-4 justify-end text-sm flex">
                     <div
-                      onClick={() => setModalView(false)}
-                      className="px-6 py-2 cursor-pointer  bg-green-500 rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 uppercase "
+                      onClick={() => {
+                        next();
+                      }}
+                      className="px-6 py-2 cursor-pointer text-white  bg-green-700 rounded-md shadow-lg hover:bg-green-800 transition-all duration-200 uppercase "
                     >
                       Next
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {modalTap && (
+            <motion.div
+              className="absolute  flex justify-center items-center left-0 top-0 text-2xl z-50 w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div
+                onClick={() => {
+                  setModalTap(false);
+                  setChoseDate("");
+                  setChoseTime("");
+                }}
+                className="z-30 bg-[#00000094] cursor-pointer backdrop-blur-sm w-full h-full absolute "
+              ></div>
+              <div className="bg-white relative z-40 p-5 rounded-2xl shadow-xl">
+                <div className="bg-[#f5b066] p-4 rounded-md shadow-xl text-black">
+                  <div className=" uppercase text-black font-black text-3xl px-5">
+                    Tap the student id
+                  </div>
+                  <div className="text-base mt-3">
+                    <div>Student Name: </div>
+                    <div>Book: </div>
+                    <div>Date/Time to Return: </div>
+                    <div>Book: </div>
+                  </div>
+                  <div className="w-full justify-end flex text-base">
+                    <div
+                      onClick={() => {
+                        setModalBorrow(true);
+                        setModalTap(false);
+                      }}
+                      className="text-red-600 cursor-pointer px-6 py-2  "
+                    >
+                      Back
+                    </div>
+                    <div
+                      onClick={() => {
+                        updateNext();
+                      }}
+                      className="bg-green-700 hover:bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md shadow-md "
+                    >
+                      Borrow
                     </div>
                   </div>
                 </div>
@@ -127,7 +337,7 @@ function Borrowing() {
                 className="z-30 bg-[#00000094] cursor-pointer  backdrop-blur-sm w-full h-full absolute "
               ></div>
               <div className="bg-white relative w-full z-40 p-5 rounded-2xl shadow-xl">
-                <div className="bg-blue-700 p-4 rounded-md flex flex-col shadow-xl text-white">
+                <div className="bg-[#f5b066] p-4 rounded-md flex flex-col shadow-xl text-white">
                   <div className="grid grid-flow-row grid-cols-7 bg-white text-black px-4 py-2 rounded-t-md border-b  text-sm">
                     <div className="text-">Student Number: </div>
                     <div className="text-">Student Name: </div>
@@ -150,7 +360,11 @@ function Borrowing() {
 
                   <div className="mt-4 justify-end text-sm flex">
                     <div
-                      onClick={() => setModalView(false)}
+                      onClick={() => {
+                        setModalView(false);
+                        updateReturn();
+                        setUpdate(true);
+                      }}
                       className="px-6 py-2 cursor-pointer  bg-orange-500 rounded-md shadow-lg hover:bg-orange-600 transition-all duration-200 uppercase "
                     >
                       return
@@ -162,7 +376,7 @@ function Borrowing() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

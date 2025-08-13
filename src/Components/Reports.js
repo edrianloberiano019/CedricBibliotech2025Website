@@ -1,67 +1,93 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+import { SyncLoader } from "react-spinners";
 
 function Reports() {
-  const [tab, setTab] = useState("Use")
+  const [tab, setTab] = useState("Use");
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  const fetchStudents = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "StudentHistory"));
+      const studentData = querySnapshot.docs.map((doc) => doc.data());
+
+      studentData.sort((a, b) => {
+        const dateA = new Date(`${a.date} ${a.timein}`);
+        const dateB = new Date(`${b.date} ${b.timein}`);
+        return dateB - dateA; 
+      });
+
+      setStudents(studentData);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStudents();
+});
+
+
   return (
-    <div className='p-10 h-screen overflow-hidden'>
-      <div className='w-full flex-col p-10 rounded-xl h-full flex bg-blue-700'>
-        <div className='mb-10'>
-
-
-          <div className='text-white text-3xl font-kanit uppercase'>Student Manager</div>
-
+    <motion.div className="p-10 h-[calc(100vh-1px)]"
+    initial={{x: 100, opacity: 0}}
+    animate={{x: 0, opacity: 1}}>
+      <div className="w-full p-10 flex flex-col h-full bg-[#c0772a] rounded-xl">
+        <div className="text-white text-3xl font-kanit uppercase">
+          Account Manager
         </div>
-        <div>
-          <div className='flex   items-center justify-between'>
 
-            <div className='flex '>
-              <input className='px-5 py-2 rounded-l-full' type='text' placeholder='Search' />
-              <div className='cursor-pointer pr-4 pl-3 rounded-r-full py-1 flex bg-green-500 overflow-hidden hover:bg-green-600 transition-all  '>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-8 text-white hover:scale-110 ease-out transition-all">
-                  <path d="M8.25 10.875a2.625 2.625 0 1 1 5.25 0 2.625 2.625 0 0 1-5.25 0Z" />
-                  <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.125 4.5a4.125 4.125 0 1 0 2.338 7.524l2.007 2.006a.75.75 0 1 0 1.06-1.06l-2.006-2.007a4.125 4.125 0 0 0-3.399-6.463Z" clip-rule="evenodd" />
-                </svg>
-
-              </div>
-
+        <div className="flex relative overflow-y-auto h-full">
+          <div className="w-full overflow-hidden  mt-5 p-10 relative rounded-md bg-white shadow-md flex flex-col">
+            <div className="grid grid-cols-7 gap-3 w-full uppercase border-b text-lg">
+              <div className="col-span-3">Student name</div>
+              <div>Grade Level</div>
+              <div>Status</div>
+              <div>time-in</div>
+              <div>time-out</div>
             </div>
 
-            <div className='flex items-center bg-blue-400 shadow-md overflow-hidden rounded-full h-10 px-2'>
-
-              <motion.div className={`' ${tab === "Use" ? 'w-20' : 'w-20'} h-10 absolute right-16  bg-white shadow-lg rounded-full  '`}
-                initial={{ x: tab === "Active" ? 0 : -15 }}
-                animate={{ x: tab === "Active" ? -85 : -15 }}
-                transition={{ type: "spring", stiffness: 300 }}
-
-              />
-
-              <div className='relative z-20 gap-8 text-xl  text-black flex justify-center text-center font-semibold items-center content-center h-full'>
-                <div onClick={() => setTab("Active")} className={`cursor-pointer px-3 ${tab === "Active" ? "text-black transition-all ease-in" : "text-blue-600 transition-all duration-500 ease-out"}`}>Out</div>
-                <div onClick={() => setTab("Use")} className={`cursor-pointer px-3 ${tab === "Active" ? "text-blue-600 transition-all duration-500 ease-out" : "text-black transition-all ease-in"} `}>In</div>
+            {loading ? (
+              <div className="w-full h-full flex justify-center items-center">
+                  <SyncLoader size={10} />
               </div>
-
-            </div>
-          </div>
-
-          <div className='w-full mt-5 p-10 rounded-md bg-white shadow-md'>
-            <div className='flex justify-between uppercase border-b pb-3 px-5 text-lg'>
-              <div>Student Name</div>
-
-              <div className='flex gap-10 uppercase'>
-              <div>Grade Level </div>
-                <div>Seated In</div>
-                <div>Status</div>
-                <div>Time In</div>
-                <div>Time Out</div>
-
+            ) : (
+              <div className="flex-1 overflow-y-auto  mt-3">
+                {students.map((student, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-7 gap-3 first-letter:uppercase py-2 px-5 text-lg"
+                  >
+                    <div className="first-letter:uppercase col-span-3 truncate">
+                      {student.name}
+                    </div>
+                    <div className="text-center"></div>
+                    <div className="flex justify-center">
+                      {student.timeout ? (
+                        <div className="bg-red-600  w-5 rounded-full h-5"></div>
+                      ) : (
+                        <div className="relative cursor-pointer">
+                          <div className="bg-green-600 absolute animate-ping w-5 rounded-full h-5"></div>
+                          <div className="bg-green-600 animate-pulse w-5 rounded-full h-5"></div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">{student.timein}</div>
+                    <div className="text-center">{student.timeout}</div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  )
+    </motion.div>
+  );
 }
 
-export default Reports
+export default Reports;
