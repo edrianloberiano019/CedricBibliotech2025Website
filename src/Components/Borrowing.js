@@ -64,30 +64,30 @@ function Borrowing() {
     const now = new Date();
 
     if (choseDate && choseTime) {
-      toast("maylaman");
+      try {
+      await updateDoc(userRef, {
+        status: "Borrowed",
+        dateReturn: dateObj,
+        dateBorrowed: now,
+      });
+
+      await addDoc(userRef2, {
+        status: `Edrian borrowed the book named "${document}"`,
+      });
+      setModalTap(false);
+      toast.success("Successfully borrowed!");
+    } catch (error) {
+      toast.error("Error updating document: ", error);
+    } finally {
+      setChoseDate("");
+      setChoseTime("");
+      setUpdate(true);
+    }
     } else {
       toast("wala laman");
     }
 
-    // try {
-    //   await updateDoc(userRef, {
-    //     status: "Borrowed",
-    //     dateReturn: dateObj,
-    //     dateBorrowed: now,
-    //   });
-
-    //   await addDoc(userRef2, {
-    //     status: `Edrian borrowed the book named "${document}"`,
-    //   });
-    //   setModalTap(false);
-    //   toast.success("Successfully borrowed!");
-    // } catch (error) {
-    //   toast.error("Error updating document: ", error);
-    // } finally {
-    //   setChoseDate("");
-    //   setChoseTime("");
-    //   setUpdate(true);
-    // }
+    
   };
 
   const updateHistoryReturn = async () => {
@@ -381,3 +381,4 @@ function Borrowing() {
 }
 
 export default Borrowing;
+

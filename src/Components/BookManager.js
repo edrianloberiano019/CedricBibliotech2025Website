@@ -38,14 +38,14 @@ function BookManager() {
       initial={{ x: 100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
     >
-      <div className="w-full flex-col p-10 rounded-xl h-full flex bg-[#c0772a]">
+      <div className="w-full flex-col p-10 relative rounded-xl h-full flex bg-[#c0772a]">
         <div className="mb-10">
           <div className="text-white text-3xl font-kanit uppercase">
             Book Manager
           </div>
         </div>
         <div>
-          <div className="flex   items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex ">
               <input
                 className="px-5 py-2 rounded-l-full"
@@ -70,24 +70,6 @@ function BookManager() {
             </div>
 
             <div className="flex gap-2 h-f">
-              <div className="flex text-xl items-center justify-center content-center">
-                <div className="bg-blue-600 h-full px-5 rounded-md shadow-md flex items-center cursor-pointer hover:bg-blue-700 transition-all">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="size-6"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                    />
-                  </svg>
-                </div>
-              </div>
               <div className="flex text-xl mr-3 items-center justify-center content-center">
                 <div className="bg-green-600 h-full px-5 rounded-md shadow-md flex items-center cursor-pointer hover:bg-green-700 transition-all">
                   Create
@@ -173,7 +155,11 @@ function BookManager() {
                 ))}
               </div>
             )}
-          </div>
+            </div>
+          {/* <div className="absolute top-0 left-0 flex justify-center rounded-xl overflow-hidden text-white  items-center w-full h-full">
+           <div className="bg-[#00000094] backdrop-blur-sm  w-full h-full absolute z-10"></div>
+           <div className="z-20 ">dsa</div>
+          </div> */}
         </div>
       </div>
     </motion.div>

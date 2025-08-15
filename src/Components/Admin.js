@@ -23,14 +23,13 @@ function Admin() {
   const [confirmpassword, setConfirmPassword] = useState("");
   const [accessLevel, setAccessLevel] = useState("Select access level");
   const [scanID, setScanID] = useState(false);
-
   const [permission, setPermission] = useState("Access Granted");
   const [uid, setUid] = useState("card");
 
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://192.168.254.100/uid");
+        const res = await fetch("http://172.20.10.3/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
