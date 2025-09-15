@@ -17,7 +17,7 @@ function Dashboard() {
   const [selectedPage, setSelectedPage] = useState("dashboard");
 
   return (
-    <div className="flex flex-row bg-gradient-to-r from-[#f5b066] via-[#d6f566] to-[#259048] h-screen">
+    <div className="flex flex-row bg-gradient-to-r from-[#f5b066] via-[#259048] to-[#f5b066] bg-[length:300%_300%] animate-gradient h-screen">
       <div className="w-1/4 h-full">
         <Sidebar setSelectedPage={setSelectedPage} />
       </div>

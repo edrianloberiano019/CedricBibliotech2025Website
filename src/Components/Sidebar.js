@@ -30,9 +30,35 @@ function Sidebar({ setSelectedPage }) {
   return (
     <div>
       <div className="w-full h-screen flex flex-col content-center items-center p-10">
-        <div className="flex flex-row text-blue-400">
+        <motion.div
+          className="flex flex-row animate-float text-blue-400"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{
+            scale: 1,
+            y: [15, -15, 15],
+            rotate: [-15, 15, -15],
+            opacity: 1,
+          }}
+          transition={{
+            x: { duration: 1, ease: "easeOut" },
+            scale: { duration: 1.5, type: "spring", delay: 0.2 },
+            y: {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5,
+            },
+            opacity: { duration: 1 },
+            rotate: {
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5,
+            },
+          }}
+        >
           <img className="rounded-xl h-[200px] " src={stilogo} />
-        </div>
+        </motion.div>
         <div className=" py-10  flex flex-col gap-2 text-xl  font-kanit w-full">
           <div
             onClick={() => {
@@ -261,7 +287,10 @@ function Sidebar({ setSelectedPage }) {
                     >
                       Settings
                     </li>
-                    <li onClick={handleLogout} className="px-4 py-2 hover:bg-[#ac7132] transition-all cursor-pointer">
+                    <li
+                      onClick={handleLogout}
+                      className="px-4 py-2 hover:bg-[#ac7132] transition-all cursor-pointer"
+                    >
                       Logout
                     </li>
                   </ul>

@@ -25,11 +25,12 @@ function Admin() {
   const [scanID, setScanID] = useState(false);
   const [permission, setPermission] = useState("Access Granted");
   const [uid, setUid] = useState("card");
+  
 
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://172.20.10.3/uid");
+        const res = await fetch("http://192.168.254.103/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -97,7 +98,7 @@ function Admin() {
                 });
 
                 const response = await fetch(
-                  `http://192.168.254.100/write?accesslevel=${accessLevel}&permission=${permission}`
+                  `http://192.168.254.103/write?accesslevel=${accessLevel}&permission=${permission}`
                 );
                 const result = await response.json();
                 if (result.status && result.status.includes("Ready")) {
@@ -565,11 +566,10 @@ function Admin() {
           <div className="flex w-full justify-end items-end">
             <button
               type="submit"
-              className="uppercase px-10 py-2 bg-green-500 rounded-md shadow-lg hover:bg-green-600 transition-all"
+              className="uppercase px-10 py-2 bg-green-600 rounded-md shadow-lg hover:bg-green-700 transition-all"
             >
-              save
+            submit
             </button>
-            <div onClick={() => setScanID(true)}>dsa</div>
           </div>
         </form>
         {scanID ? (

@@ -10,40 +10,46 @@ function Reports() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const fetchStudents = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "StudentHistory"));
-      const studentData = querySnapshot.docs.map((doc) => doc.data());
+    const fetchStudents = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "StudentHistory"));
+        const studentData = querySnapshot.docs.map((doc) => doc.data());
 
-      studentData.sort((a, b) => {
-        const dateA = new Date(`${a.date} ${a.timein}`);
-        const dateB = new Date(`${b.date} ${b.timein}`);
-        return dateB - dateA; 
-      });
+        studentData.sort((a, b) => {
+          const dateA = new Date(`${a.date} ${a.timein}`);
+          const dateB = new Date(`${b.date} ${b.timein}`);
+          return dateB - dateA;
+        });
 
-      setStudents(studentData);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setStudents(studentData);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchStudents();
-});
-
+    fetchStudents();
+  });
 
   return (
-    <motion.div className="p-10 h-[calc(100vh-1px)]"
-    initial={{x: 100, opacity: 0}}
-    animate={{x: 0, opacity: 1}}>
+    <motion.div
+      className="p-10 h-[calc(100vh-1px)]"
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+    >
       <div className="w-full p-10 flex flex-col h-full bg-[#c0772a] rounded-xl">
-        <div className="text-white text-3xl font-kanit uppercase">
+        <div className="text-white text-3xl h-[5%] font-kanit uppercase">
           Account Manager
         </div>
 
-        <div className="flex relative overflow-y-auto h-full">
-          <div className="w-full overflow-hidden  mt-5 p-10 relative rounded-md bg-white shadow-md flex flex-col">
+        <div className="flex relative h-[95%]">
+          <motion.div
+            className="w-full overflow-hidden  mt-5 p-10 relative rounded-md bg-white shadow-md flex flex-col"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 1, type: "spring" }}
+          >
             <div className="grid grid-cols-7 gap-3 w-full uppercase border-b text-lg">
               <div className="col-span-3">Student name</div>
               <div>Grade Level</div>
@@ -54,14 +60,17 @@ function Reports() {
 
             {loading ? (
               <div className="w-full h-full flex justify-center items-center">
-                  <SyncLoader size={10} />
+                <SyncLoader size={10} />
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto  mt-3">
                 {students.map((student, index) => (
-                  <div
+                  <motion.div
                     key={index}
                     className="grid grid-cols-7 gap-3 first-letter:uppercase py-2 px-5 text-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
                   >
                     <div className="first-letter:uppercase col-span-3 truncate">
                       {student.name}
@@ -79,11 +88,11 @@ function Reports() {
                     </div>
                     <div className="text-center">{student.timein}</div>
                     <div className="text-center">{student.timeout}</div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
     </motion.div>

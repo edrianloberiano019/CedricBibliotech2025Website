@@ -23,7 +23,7 @@ function EntanceSystem() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://172.20.10.3/uid");
+        const res = await fetch("http://192.168.254.103/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -90,7 +90,6 @@ function EntanceSystem() {
           timein: now.toLocaleTimeString(),
           timeout: null,
           ["date/time"]: now.toLocaleString(),
-          
         });
 
         await updateDoc(doc(db, "StudentAccount", docId), {
@@ -108,7 +107,8 @@ function EntanceSystem() {
         await addDoc(collection(db, "StudentHistoryLeft"), {
           status: ` ${userData.firstname} ${userData.lastname} left the library.`,
           name: `${userData.firstname} ${userData.lastname}`,
-          timeouts: now.toLocaleTimeString()
+          timeouts: now.toLocaleTimeString(),
+          date: now.toLocaleDateString()
         });
         setTimeouts(now);
       }
@@ -154,7 +154,7 @@ function EntanceSystem() {
 
   return (
     <div className=" w-full flex h-[calc(100vh-0px)]">
-      <div className="bg-gradient-to-r from-[#f5b066] via-[#d6f566] to-[#259048] w-full h-full flex justify-center items-center content-center">
+      <div className="bg-gradient-to-r from-[#f5b066] via-[#259048] to-[#f5b066] bg-[length:300%_300%] backdrop-blur-[8px] animate-gradient w-full h-full flex justify-center items-center content-center">
         <motion.div
           layout
           transition={{ duration: 0.4, ease: "easeInOut" }}
@@ -168,10 +168,10 @@ function EntanceSystem() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <p className="text-5xl uppercase">Student Information</p>
+              <p className="text-5xl uppercase">user Information</p>
               <p className="mt-4">
                 Name: {userData.firstname} {userData.middlename}{" "}
-                {userData.lastname} {docId}
+                {userData.lastname}
               </p>
               <p>Student Number: {userData.studentnumber}</p>
               <p>Grade Level: {userData.gradelevel}</p>
