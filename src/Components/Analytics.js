@@ -42,30 +42,49 @@ function Analytics() {
 
   useEffect(() => {
     const fetchChartData = async () => {
+
       try {
-        const snapshot = await getDocs(collection(db, "StudentHistory"));
+        if (dropDownName === "D1") {
+          const snapshot = await getDocs(collection(db, "StudentHistory"));
+          const monthCounts = Array(12).fill(0);
 
-        // Initialize counts for all months
-        const monthCounts = Array(12).fill(0);
-
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          if (data.date) {
-            // Parse MM/DD/YYYY
-            const [month, day, year] = data.date.split("/").map(Number);
-            if (month >= 1 && month <= 12) {
-              monthCounts[month - 1] += 1; // add to that month
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            if (data.date) {
+              const [month] = data.date.split("/").map(Number);
+              if (month >= 1 && month <= 12) {
+                monthCounts[month - 1] += 1;
+              }
             }
-          }
-        });
+          });
 
-        // Convert into Recharts-friendly data
-        const formatted = months.map((m, i) => ({
-          month: m,
-          value: monthCounts[i],
-        }));
+          const formatted = months.map((m, i) => ({
+            month: m,
+            value: monthCounts[i],
+          }));
 
-        setChartData(formatted);
+          setChartData(formatted);
+        } else if (dropDownName === "D2") {
+          const snapshot = await getDocs(collection(db, "BooksHistory"));
+          const monthCounts = Array(12).fill(0); 
+
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            if (data.indicator === "borrowed" && data.date) {
+              const [month] = data.date.split("/").map(Number);
+              if (month >= 1 && month <= 12) {
+                monthCounts[month - 1] += 1;
+              }
+            }
+          });
+
+          const formatted = months.map((m, i) => ({
+            month: m,
+            value: monthCounts[i],
+          }));
+
+          setChartData(formatted);
+        }
       } catch (err) {
         console.error("Error fetching chart data:", err);
       } finally {
@@ -74,7 +93,7 @@ function Analytics() {
     };
 
     fetchChartData();
-  }, []);
+  }, [dropDownName]);
 
   useEffect(() => {
     if (dropDownName === "D1") {
@@ -90,17 +109,10 @@ function Analytics() {
   useEffect(() => {
     const parseTimeToDate = (timeStr) => {
       if (!timeStr) return new Date(0);
-
       const [time, modifier] = timeStr.split(" ");
       let [hours, minutes, seconds] = time.split(":").map(Number);
-
-      if (modifier === "PM" && hours !== 12) {
-        hours += 12;
-      }
-      if (modifier === "AM" && hours === 12) {
-        hours = 0;
-      }
-
+      if (modifier === "PM" && hours !== 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
       return new Date(1970, 0, 1, hours, minutes, seconds || 0);
     };
 
@@ -112,7 +124,6 @@ function Analytics() {
           .filter((item) => item.status && item.status.includes("entered"))
           .sort((a, b) => parseTimeToDate(b.timein) - parseTimeToDate(a.timein))
           .slice(0, 10);
-
         setLogin(filtered);
       } catch (error) {
         console.log("error:", error);
@@ -130,7 +141,6 @@ function Analytics() {
             (a, b) => parseTimeToDate(b.timeouts) - parseTimeToDate(a.timeouts)
           )
           .slice(0, 10);
-
         setLogout(filtered2);
       } catch (error) {
         console.log("error:", error);
@@ -139,7 +149,7 @@ function Analytics() {
 
     fetchingDetailsLeft();
     fetchingDetails();
-  });
+  }, []);
 
   return (
     <motion.div

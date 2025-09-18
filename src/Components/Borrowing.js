@@ -20,6 +20,7 @@ import emailjs from "@emailjs/browser";
 
 function Borrowing() {
   const [modalBorrow, setModalBorrow] = useState(false);
+  const [modalFinal, setModalFinal] = useState(false);
   const [modalView, setModalView] = useState(false);
   const [modalTap, setModalTap] = useState(false);
   const [books, setBooks] = useState([]);
@@ -32,12 +33,21 @@ function Borrowing() {
   const [id, setID] = useState("");
   const [userData, setUserData] = useState(null);
   const [docId, setDocId] = useState("");
-  const globaldatetime = new Date(`${choseDate}T${choseTime}`);
+  const globaldatetime =
+    choseDate && choseTime
+      ? (() => {
+          const dt = new Date(`${choseDate}T${choseTime}`);
+          return isNaN(dt.getTime()) ? null : dt;
+        })()
+      : null;
   const [name, setName] = useState("");
   const [details, setDetails] = useState([]);
   const [email, setEmail] = useState("");
-  const [loading2, setLoading2 ] = useState(false)
+  const [loading2, setLoading2] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [namesecond, setNameSecond] = useState("");
+  const [run, setRun] = useState(false);
+  const [loading3, setLoading3] = useState(false);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -83,22 +93,27 @@ function Borrowing() {
           setEmail(docData.email);
           setName(fullName);
           setDocId(docSnap.id);
+          setLoading2(false);
         } else {
           setUserData(null);
           setDocId(null);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setUid("");
+        console.log(uid, "haha");
       }
     };
-
-    fetchDetails();
+    if (run) {
+      fetchDetails();
+    }
   }, [uid]);
 
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://192.168.254.100/uid");
+        const res = await fetch("http://192.168.254.103/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -125,6 +140,35 @@ function Borrowing() {
       });
       updateHistoryReturn();
       toast.success("Successfully returned!");
+
+      const dateObj = new Date(`${choseDate}T${choseTime}`);
+      const now = new Date();
+
+      console.log(email, "gaga");
+      return;
+      emailjs
+        .send(
+          "service_xq3itn4",
+          "template_m7hwnqb",
+          {
+            name: "Caloocan City E-Library",
+            book: document,
+            status: "returned",
+            email: email,
+            from_name: "React User",
+            message: `Thank you for returning ${document} to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
+            time: now.toLocaleDateString() + " " + now.toLocaleTimeString(),
+            names: namesecond,
+          },
+          "5JJ4BU1mfv1J_lZ3I"
+        )
+        .then((response) => {
+          console.log("SUCCESS!", response.status, response.text);
+        })
+        .catch((err) => {
+          console.error("FAILED...", err);
+          alert("Email failed: " + err.text);
+        });
     } catch (error) {
       toast.error("Error updating document: ", error);
     }
@@ -147,8 +191,11 @@ function Borrowing() {
 
       console.log("📚 Found book:", bookData);
       setDetails(bookData);
+      setEmail(bookData.email);
+      setNameSecond(bookData.currentBorrower);
     } catch (error) {
       toast.error("Error fetching books: " + error.message);
+    } finally {
     }
   };
 
@@ -161,7 +208,8 @@ function Borrowing() {
   });
 
   const updateNext = async (borrowName) => {
-    setLoading2(true)
+    setLoading2(true);
+    setLoading3(true);
     const dateObj = new Date(`${choseDate}T${choseTime}`);
     const userRef = doc(db, "BooksData", document);
     const userRef2 = collection(db, "BooksHistory");
@@ -175,15 +223,17 @@ function Borrowing() {
           dateReturn: dateObj,
           dateBorrowed: now,
           currentBorrower: borrowName,
+          email: email,
         });
 
         await addDoc(userRef2, {
           status: name + " " + `borrowed the book named "${document}"`,
           date: now.toLocaleString(),
+          indicator: "borrowed"
         });
         setModalTap(false);
         toast.success("Successfully borrowed!");
-        setModalTap(false);
+        setModalFinal(false);
         setChoseDate("");
         setChoseTime("");
         setUid("0");
@@ -192,7 +242,8 @@ function Borrowing() {
       } catch (error) {
         toast.error("Error! No user found!", error);
       } finally {
-        setLoading2(false)
+        setLoading2(false);
+        setLoading3(false);
       }
     } else {
       toast("wala laman");
@@ -226,17 +277,36 @@ function Borrowing() {
   const sendEmail = () => {
     const now = new Date();
 
-    return;
+    if (!choseDate || !choseTime) {
+      alert("Please select both date and time");
+      return;
+    }
+
+    const dateTimeString = `${choseDate}T${choseTime}`;
+    const datetime = new Date(dateTimeString);
+
+    if (isNaN(datetime.getTime())) {
+      alert("Invalid date or time format");
+      return;
+    }
+
+    return
+
     emailjs
       .send(
         "service_xq3itn4",
         "template_m7hwnqb",
         {
+          names: namesecond,
           name: "Caloocan City E-Library",
           book: document,
           email: email,
           from_name: "React User",
-          message: "Hello from Caloocan City E-Library + EmailJS!",
+          hatdog: "Due date: ",
+          status: "borrowed",
+          returntime:
+            datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString(),
+          message: `Thank you for borrowing ${document} from the Caloocan City E-Library. We hope you enjoy reading this book and find it informative, entertaining, or inspiring. Please take good care of this book and return it by the due date so others can also enjoy it. Your support helps us provide a wide variety of resources for the community. Happy reading and we look forward to welcoming you back soon!`,
           time: now.toLocaleDateString() + " " + now.toLocaleTimeString(),
         },
         "5JJ4BU1mfv1J_lZ3I"
@@ -376,17 +446,45 @@ function Borrowing() {
                     type="date"
                     className="rounded-lg focus:outline-none text-black px-8 py-1 text-lg"
                     value={choseDate}
+                    min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setChoseDate(e.target.value)}
                   />
                   <input
                     type="time"
                     className="rounded-lg ml-4 focus:outline-none text-black px-8 py-1 text-lg"
                     value={choseTime}
+                    min={
+                      choseDate === new Date().toISOString().split("T")[0]
+                        ? new Date().toISOString().split("T")[1].slice(0, 5)
+                        : undefined
+                    }
                     onChange={(e) => setChoseTime(e.target.value)}
                   />
                   <div className="mt-4 justify-end text-sm flex">
                     <div
                       onClick={() => {
+                        if (!choseDate || !choseTime) {
+                          toast.info("Please select both date and time.");
+                          return;
+                        }
+
+                        const now = new Date();
+                        const todayString = now.toISOString().split("T")[0];
+                        const currentTime = now.toTimeString().slice(0, 5);
+
+                        if (choseDate < todayString) {
+                          toast.info("You cannot select a past date.");
+                          return;
+                        }
+
+                        if (
+                          choseDate === todayString &&
+                          choseTime < currentTime
+                        ) {
+                          toast.info("You cannot select a past time today.");
+                          return;
+                        }
+
                         next();
                       }}
                       className="px-6 py-2 cursor-pointer text-white  bg-green-700 rounded-md shadow-lg hover:bg-green-800 transition-all duration-200 uppercase "
@@ -419,30 +517,31 @@ function Borrowing() {
               ></div>
               <div className="bg-white relative z-40 p-5 rounded-2xl shadow-xl">
                 <div className="bg-[#f5b066] p-4 rounded-md shadow-xl text-black">
-                  {userData ? (
-                    <div className="flex w-full flex-col">
-                      <div className=" uppercase justify-center i flex w-full text-black font-black text-3xl px-5">
-                        Tap the id
+                  <div>
+                    <div>
+                      <div className=" uppercase text-black flex justify-center font-black text-3xl px-5">
+                        INFORMATION
                       </div>
                       <div className="p-4 rounded-md flex flex-col text-white">
-                        <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-t-md border-b  text-sm">
-                          <div className="text- ">Name: </div>
+                        <div className="grid grid-flow-row gap-6 grid-cols-3 bg-white text-black px-4 py-2 rounded-t-md border-b  text-sm">
                           <div className="text-l">Borrowed Book: </div>
                           <div className="textxl">D/T Borrowed: </div>
                           <div className="tex-xl">D/T to Return: </div>
                         </div>
 
-                        <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-b-md text-sm">
-                          <div className="text- first-letter:uppercase">
-                            {" "}
-                            {name}
+                        <div className="grid grid-flow-row gap-6 grid-cols-3 bg-white text-black px-4 py-2 rounded-b-md text-sm">
+                          <div className="text-l text-ellipsis truncate">
+                            {document}{" "}
                           </div>
-                          <div className="text-l">{document}</div>
                           <div className="textxl">
-                            {globaldatetime.toLocaleDateString()}{" "}
+                            {globaldatetime
+                              ? globaldatetime.toLocaleDateString()
+                              : ""}
                           </div>
                           <div className="tex-xl">
-                            {globaldatetime.toLocaleTimeString()}{" "}
+                            {globaldatetime
+                              ? globaldatetime.toLocaleTimeString()
+                              : ""}
                           </div>
                         </div>
                       </div>
@@ -458,77 +557,99 @@ function Borrowing() {
                         </div>
                         <div
                           onClick={() => {
-                            updateNext(
-                              userData.firstname +
-                                " " +
-                                userData.middlename +
-                                " " +
-                                userData.lastname
-                            );
-
-                            sendEmail();
+                            setModalFinal(true);
+                            setModalTap(false);
+                            setLoading2(true);
+                            setRun(true);
                           }}
-                          className="bg-green-700 hover:bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md shadow-md "
+                          className="bg-green-700 cursor-pointer hover:bg-green-800 text-white px-6 py-2 rounded-md shadow-md "
                         >
-                          Borrow
+                          <div>NEXT</div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div>
-                      <div>
-                        <div className=" uppercase text-black flex justify-center font-black text-3xl px-5">
-                          Tap the id
-                        </div>
-                        <div className="p-4 rounded-md flex flex-col text-white">
-                          <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-t-md border-b  text-sm">
-                            <div className="text-">Name: </div>
-                            <div className="text-l">Borrowed Book: </div>
-                            <div className="textxl">D/T Borrowed: </div>
-                            <div className="tex-xl">D/T to Return: </div>
-                          </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                          <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-b-md text-sm">
-                            <div className="text-">
-                              <ClipLoader size={10} />{" "}
-                            </div>
-                            <div className="text-l">Shuckable </div>
-                            <div className="textxl">
-                              {globaldatetime.toLocaleDateString()}{" "}
-                            </div>
-                            <div className="tex-xl">
-                              {globaldatetime.toLocaleTimeString()}{" "}
-                            </div>
+        <AnimatePresence>
+          {modalFinal && (
+            <motion.div
+              className="absolute  flex justify-center items-center px-10 left-0 top-0 text-2xl z-50 w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div
+                onClick={() => setModalFinal(false)}
+                className="z-30 bg-[#00000094] cursor-pointer  backdrop-blur-sm w-full h-full absolute "
+              ></div>
+              <div className="bg-white relative z-40 p-5 rounded-2xl shadow-xl">
+                <div className="bg-[#f5b066] p-4 rounded-md flex flex-col shadow-xl text-white">
+                  <div className=" text-black font-black px-4 py-2 rounded-t-md  text-4xl">
+                    TAP THE ID
+                  </div>
+                  {details && (
+                    <div className=" bg-white flex flex-col text-black px-4 py-4 rounded-md text-sm">
+                      <div className="flex items-center ">
+                        Name:{" "}
+                        {loading2 ? (
+                          <div className="ml-2 flex items-center">
+                            <ClipLoader size={20} />
                           </div>
-                        </div>
-                        <div className="w-full mt-3 justify-end flex text-base">
-                          <div
-                            onClick={() => {
-                              setModalBorrow(true);
-                              setModalTap(false);
-                            }}
-                            className="text-red-600 cursor-pointer px-6 py-2  "
-                          >
-                            Back
-                          </div>
-                          <div
-                            onClick={() => {
-                              updateNext();
-                            }}
-                            className="bg-green-700 hover:bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md shadow-md "
-                          >
-                            {loading2 ? (
-                              <div className="flex justify-center">
-                                <div className=" h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin "></div>
-                              </div>
-                            ) : (
-                              <div>Borrow</div>
-                            )}
-                          </div>
-                        </div>
+                        ) : (
+                          <div className="ml-2">{name}</div>
+                        )}
                       </div>
                     </div>
                   )}
+
+                  <div className="w-full mt-3 justify-end flex text-base">
+                    <div
+                      onClick={() => {
+                        setModalTap(true);
+                        setModalFinal(false);
+                      }}
+                      className="text-red-600 cursor-pointer px-6 py-2  "
+                    >
+                      Back
+                    </div>
+
+                    {userData ? (
+                      <>
+                        {loading3 ? (
+                          <div className="flex justify-center px-8 rounded-md py-2 bg-gray-400 cursor-not-allowed">
+                            <div className=" h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin "></div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => {
+                              updateNext(
+                                userData.firstname +
+                                  " " +
+                                  userData.middlename +
+                                  " " +
+                                  userData.lastname
+                              );
+
+                              sendEmail();
+                            }}
+                            className="bg-green-700 hover:bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md shadow-md "
+                          >
+                            BORROW
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="bg-gray-400 cursor-not-allowed text-white px-6 py-2 rounded-md ">
+                        SUBMIT
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
