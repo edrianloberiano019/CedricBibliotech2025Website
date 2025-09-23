@@ -50,7 +50,7 @@ function BackLog() {
           transition={{ delay: 0.2, duration: 1, type: "spring" }}
         >
           <div className="w-full overflow-hidden  mt-5 p-10 relative rounded-md bg-white shadow-md flex flex-col">
-            <div className="flex justify-between uppercase border-b text-lg">
+            <div className="flex justify-between uppercase  text-lg">
               <div>Notification</div>
             </div>
 
@@ -59,17 +59,17 @@ function BackLog() {
                 <SyncLoader size={10} />
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto  mt-3">
+              <div className="flex-1 overflow-y-auto border rounded-md overflow-hidden border-gray-400 mt-3 ">
                 {history.map((book, index) => (
                   <motion.div
                     key={index}
-                    className="flex py-2 justify-between"
+                    className="flex  justify-between items-center  border-gray-400  px-2 border-b"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <div>{book.status}</div>
-                    <div className="text-gray-500 text-sm">{book.date}</div>
+                    <div className="">{book.status}</div>
+                    <div className=" flex py-2 text-sm border-l border-gray-400  pl-10">{book.date}</div>
                   </motion.div>
                 ))}
               </div>

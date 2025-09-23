@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 function EntanceSystem() {
   const [uid, setUid] = useState("");
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState("Dasd");
   const [docId, setDocId] = useState("");
   const [timeouts, setTimeouts] = useState("");
   const [id, setID] = useState(false);
@@ -163,19 +163,17 @@ function EntanceSystem() {
           {userData ? (
             <motion.div
               layout
-              className="text-xl font-Anton"
+              className="text-4xl text-[#3b2f2f] font-Anton"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <p className="text-5xl uppercase">user Information</p>
+              <p className="text-8xl uppercase">user Information</p>
               <p className="mt-4">
                 Name: {userData.firstname} {userData.middlename}{" "}
                 {userData.lastname}
               </p>
-              <p>Student Number: {userData.studentnumber}</p>
-              <p>Grade Level: {userData.gradelevel}</p>
-              <p>Year Level: {userData.yearlevel}</p>
+              <p>ID Number: {userData.studentnumber}</p>
               <p>Age: {userData.age}</p>
               <p>Email: {userData.email}</p>
               <p>
@@ -189,7 +187,7 @@ function EntanceSystem() {
           ) : (
             <motion.h1
               layout
-              className="text-6xl text-[#3b2f2f] font-Anton uppercase"
+              className="text-9xl text-[#3b2f2f] font-Anton uppercase"
             >
               Tap your ID
             </motion.h1>

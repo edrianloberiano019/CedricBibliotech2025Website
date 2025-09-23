@@ -1,4 +1,4 @@
-import { useScroll } from "framer-motion";
+import { AnimatePresence, useScroll } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { db } from "../firebase";
@@ -19,13 +19,14 @@ function Admin() {
   const [lastname, setLastname] = useState("");
   const [middlename, setMiddlename] = useState("");
   const [age, setAge] = useState("");
-  const [studentnumber, setStudentNumber] = useState("02000");
+  const [Patronnumber, setPatronNumber] = useState("02000");
   const [confirmpassword, setConfirmPassword] = useState("");
-  const [accessLevel, setAccessLevel] = useState("Select access level");
+  const [accessLevel, setAccessLevel] = useState("Admin");
   const [scanID, setScanID] = useState(false);
   const [permission, setPermission] = useState("Access Granted");
   const [uid, setUid] = useState("card");
-  
+  const [showPassword, setShowPassword] = useState(true);
+  const [transit, setTransit] = useState(false);
 
   useEffect(() => {
     const fetchUID = async () => {
@@ -46,9 +47,9 @@ function Admin() {
   }, []);
 
   const handleChange = (e) => {
-    const studentnumber = e.target.value;
-    if (/^\d*$/.test(studentnumber)) {
-      setStudentNumber(studentnumber);
+    const Patronnumber = e.target.value;
+    if (/^\d*$/.test(Patronnumber)) {
+      setPatronNumber(Patronnumber);
     }
   };
 
@@ -60,77 +61,27 @@ function Admin() {
   };
 
   // const settingsForAccessLevel = () => {
-  //   setAccessLevel["Admin", "Student"]
+  //   setAccessLevel["Admin", "Patron"]
   // }
 
   // useEffect(() => {}, []);
 
   const confirmationScanning = (e) => {
     e.preventDefault();
-    setScanID(true);
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-
-    if (password === confirmpassword) {
-      if (password.length > 6) {
-        if (age >= 16) {
-          if (
-            (grade !== "Select grade level" && year !== "Select year level") ||
-            accessLevel === "Admin"
-          ) {
-            if (studentnumber.length >= 10) {
-              try {
-                await setDoc(doc(db, "StudentAccount", studentnumber), {
-                  email: email,
-                  password: password,
-                  studentnumber: studentnumber,
-                  firstname: firstname,
-                  lastname: lastname,
-                  middlename: middlename,
-                  age: age,
-                  yearlevel: year,
-                  gradelevel: grade,
-                  setPermission: permission,
-                  cardUID: uid,
-                  accessLevel: accessLevel
-                });
-
-                const response = await fetch(
-                  `http://192.168.254.103/write?accesslevel=${accessLevel}&permission=${permission}`
-                );
-                const result = await response.json();
-                if (result.status && result.status.includes("Ready")) {
-                } else {
-                  toast.error("Card write failed!");
-                  return;
-                }
-
-                toast.success("User successfully registered!");
-                setScanID(false);
-                setEmail("");
-                setPassword("");
-                setAge("");
-                setFirstname("");
-                setLastname("");
-                setStudentNumber("02000");
-                setConfirmPassword("");
-                setMiddlename("");
-                setGrade("Select grade level");
-                setYear("Select year level");
-              } catch (error) {
-                console.error("Error adding user:", error);
-                toast.error("Failed to register user.");
-              }
+    if (accessLevel !== "Admin" && accessLevel !== "Staff" || password === confirmpassword) {
+      if (accessLevel !== "Admin" && accessLevel !== "Staff" || password.length > 6) {
+        if (!/\d/.test(middlename)) {
+          if (age >= 16) {
+            if (Patronnumber.length >= 10) {
+              setScanID(true);
             } else {
-              toast.error("Please input your student number correctly.");
+              toast.error("Please input your ID number correctly.");
             }
           } else {
-            toast.error("Choose grade or year level");
+            toast.error("Age must be greater than 15.");
           }
         } else {
-          toast.error("Age must be greater than 15.");
+          toast.error("Middle name should not contain numbers.");
         }
       } else {
         toast.error("Password must be more than 6 characters.");
@@ -140,10 +91,59 @@ function Admin() {
     }
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    try {
+      await setDoc(doc(db, "PatronAccount", Patronnumber), {
+        email: email,
+        password: password,
+        Patronnumber: Patronnumber,
+        firstname: firstname,
+        lastname: lastname,
+        middlename: middlename,
+        age: age,
+        yearlevel: year,
+        gradelevel: grade,
+        setPermission: permission,
+        cardUID: uid,
+        accessLevel: accessLevel,
+      });
+
+      const response = await fetch(
+        `http://192.168.254.103/write?accesslevel=${accessLevel}&permission=${permission}`
+      );
+      const result = await response.json();
+      if (result.status && result.status.includes("Ready")) {
+      } else {
+        toast.error("Card write failed!");
+        return;
+      }
+
+      toast.success("User successfully registered!");
+      setScanID(false);
+      setEmail("");
+      setPassword("");
+      setAge("");
+      setFirstname("");
+      setLastname("");
+      setPatronNumber("02000");
+      setConfirmPassword("");
+      setMiddlename("");
+      setGrade("Select grade level");
+      setYear("Select year level");
+    } catch (error) {
+      console.error("Error adding user:", error);
+      toast.error("Failed to register user.");
+    }
+  };
+
   return (
-    <motion.div className="p-10 h-screen overflow-hidden"
-    initial={{x: 100, opacity: 0}}
-    animate={{x: 0, opacity: 1}}>
+    <motion.div
+      className="p-10 h-screen overflow-hidden"
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+    >
       <div className="w-full relative p-10 flex flex-col h-full bg-[#c0772a] rounded-xl">
         <div className="text-2xl font-kanit">
           <div className="text-white text-3xl uppercase">
@@ -156,7 +156,12 @@ function Admin() {
         >
           <div className="flex flex-col">
             <div className="flex gap-10">
-              <div className="w-full">
+              <motion.div
+                className="w-full"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{}}
+              >
                 <div className="flex gap-2 ">
                   <div>Firstname: </div>
                   <div className="text-red-500">*</div>
@@ -168,9 +173,14 @@ function Admin() {
                   placeholder="Ex: John"
                   required
                 />
-              </div>
+              </motion.div>
 
-              <div className="w-full">
+              <motion.div
+                className="w-full"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
                 <div className="flex gap-2">
                   <div>Lastname: </div>
                   <div className="text-red-500">*</div>
@@ -182,9 +192,13 @@ function Admin() {
                   placeholder="Ex: Doe"
                   required
                 />
-              </div>
+              </motion.div>
 
-              <div className="w-full">
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
                 <div className="flex gap-2">
                   <div>Middlename: </div>
                   <div className="text-red-500"></div>
@@ -195,17 +209,22 @@ function Admin() {
                   className="px-5 py-2 rounded-md text-black w-full outline-none"
                   placeholder="Ex: Sy"
                 />
-              </div>
+              </motion.div>
             </div>
 
             <div className="flex gap-10 mt-5">
-              <div className="w-full">
+              <motion.div
+                className="w-full"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
                 <div className="flex gap-2">
-                  <div>Id Number: </div>
+                  <div>ID Number: </div>
                   <div className="text-red-500">*</div>
                 </div>
                 <input
-                  value={studentnumber}
+                  value={Patronnumber}
                   className="px-5 py-2 rounded-md text-black w-full outline-none"
                   maxLength={11}
                   minLength={10}
@@ -215,9 +234,14 @@ function Admin() {
                   onChange={handleChange}
                   required
                 />
-              </div>
+              </motion.div>
 
-              <div className="w-full">
+              <motion.div
+                className="w-full"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
                 <div className="flex gap-2 ">
                   <div>Age: </div>
                   <div className="text-red-500">*</div>
@@ -232,9 +256,14 @@ function Admin() {
                   onChange={handleChange2}
                   required
                 />
-              </div>
+              </motion.div>
 
-              <div className="w-full">
+              <motion.div
+                className="w-full"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
                 <div className="flex gap-2">
                   <div>Email: </div>
                   <div className="text-red-500">*</div>
@@ -247,45 +276,76 @@ function Admin() {
                   required
                   placeholder="Ex: JohnDoe@gmail.com"
                 />
-              </div>
+              </motion.div>
             </div>
+            <AnimatePresence>
+              {showPassword &&
+                (accessLevel === "Admin" || accessLevel === "Staff") && (
+                  <motion.div className="flex gap-10 mt-5">
+                    <motion.div
+                      className="w-full"
+                      initial={{ y: 100, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 100, opacity: 0 }}
+                      transition={{
+                        delay: transit ? 0.1 : 0.7,
+                      }}
+                    >
+                      <div className="flex gap-2">
+                        <div>Password: </div>
+                        <div className="text-red-500">*</div>
+                      </div>
+                      <motion.div>
+                        <input
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="px-5 py-2 rounded-md text-black w-full outline-none"
+                          placeholder="Enter your password"
+                          type="password"
+                          required
+                        />
+                      </motion.div>
+                    </motion.div>
 
-            <div className="flex gap-10 mt-5">
-              <div className="w-full">
-                <div className="flex gap-2">
-                  <div>Password: </div>
-                  <div className="text-red-500">*</div>
-                </div>
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="px-5 py-2 rounded-md text-black w-full outline-none"
-                  placeholder="Enter your password"
-                  type="password"
-                  required
-                />
-              </div>
-
-              <div className="w-full">
-                <div className="flex gap-2 ">
-                  <div>Confirm Password: </div>
-                  <div className="text-red-500">*</div>
-                </div>
-                <input
-                  value={confirmpassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="px-5 py-2 rounded-md text-black w-full outline-none"
-                  required
-                  placeholder="Confirm your password"
-                  type="password"
-                />
-              </div>
-            </div>
+                    <motion.div
+                      className="w-full"
+                      initial={{ y: 100, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 100, opacity: 0 }}
+                      transition={{
+                        delay: transit ? 0.2 : 0.8,
+                      }}
+                    >
+                      <div className="flex gap-2">
+                        <div>Confirm Password: </div>
+                        <div className="text-red-500">*</div>
+                      </div>
+                      <input
+                        value={confirmpassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="px-5 py-2 rounded-md text-black w-full outline-none"
+                        placeholder="Confirm your password"
+                        type="password"
+                        required
+                      />
+                    </motion.div>
+                  </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="flex gap-10 justify-between mt-5">
               <div className=""></div>
 
-              <div className="flex gap-10">
+              <motion.div
+                className="flex gap-10"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{
+                  delay: transit ? 0.2 : 0.9,
+                }}
+                layout
+              >
                 <div className="overflow-hidden pb-5">
                   <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
@@ -343,6 +403,7 @@ function Admin() {
                           setAccessLevel("Admin");
                           setGrade("Select grade level");
                           setYear("Select year level");
+                          setTransit(true);
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -353,6 +414,7 @@ function Admin() {
                           setAccessLevel("Staff");
                           setGrade("Select grade level");
                           setYear("Select year level");
+                          setTransit(true);
                         }}
                         className="px-5 py-2 transition-all cursor-pointer hover:bg-gray-200 "
                       >
@@ -360,17 +422,18 @@ function Admin() {
                       </div>
                       <div
                         onClick={() => {
-                          setAccessLevel("Student");
+                          setAccessLevel("Patron");
+                          setTransit(true);
                         }}
                         className="px-5 py-2 hover:bg-gray-200 transition-all cursor-pointer "
                       >
-                        Student
+                        Patron
                       </div>
                     </div>
                   </motion.div>
                 </div>
 
-                <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
+                {/* <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
                   <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
                       <div>Select Grade Level: </div>
@@ -450,9 +513,9 @@ function Admin() {
                       </div>
                     </div>
                   </motion.div>
-                </div>
+                </div> */}
 
-                <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
+                {/* <div className={`" ${accessLevel === "Admin" || accessLevel === "Staff" || accessLevel === "Select access level" ? "hidden" : ""} overflow-hidden pb-5 "`}>
                   <div className="bg-[#c0772a]  relative z-20 ">
                     <div className="flex gap-2 ">
                       <div>Select Year Level: </div>
@@ -558,8 +621,8 @@ function Admin() {
                       </div>
                     </div>
                   </motion.div>
-                </div>
-              </div>
+                </div> */}
+              </motion.div>
             </div>
           </div>
 
@@ -568,56 +631,65 @@ function Admin() {
               type="submit"
               className="uppercase px-10 py-2 bg-green-600 rounded-md shadow-lg hover:bg-green-700 transition-all"
             >
-            submit
+              submit
             </button>
           </div>
         </form>
-        {scanID ? (
-          <div className="absolute top-0 left-0 justify-center flex items-center w-full h-full z-20 ">
-            <div
-              onClick={() => setScanID(false)}
-              className="absolute cursor-pointer rounded-xl top-0 left-0 z-10 bg-[#0007] w-full h-full"
-            ></div>
-            <div className="bg-white w-[50%] rounded-xl p-10 z-20">
-              <div className="mb-5 w-full justify-center flex flex-col content-center ">
-                <div className="text-4xl font-black uppercase text-center">
-                  Tap your id
+        <AnimatePresence>
+          {scanID && (
+            <div className="absolute top-0 left-0 justify-center flex items-center w-full h-full z-20 ">
+              <motion.div
+                onClick={() => setScanID(false)}
+                className="absolute cursor-pointer rounded-xl top-0 left-0 z-10 bg-[#0007] w-full h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              ></motion.div>
+              <motion.div
+                className="bg-white w-[50%] rounded-xl p-10 z-20"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.6, type: "spring" }}
+              >
+                <div className="mb-5 w-full justify-center flex flex-col content-center ">
+                  <div className="text-4xl font-black uppercase text-center">
+                    Tap your id
+                  </div>
+                  <div className="text-sm mb-5 text-gray-500 text-center">
+                    Make sure to tap the correct id.
+                  </div>
                 </div>
-                <div className="text-sm mb-5 text-gray-500 text-center">
-                  Make sure to tap the correct id.
+                <div>
+                  Name: {firstname} {middlename} {lastname}
                 </div>
-              </div>
-              <div>
-                Name: {firstname} {middlename} {lastname}
-              </div>
-              <div>Student ID: {studentnumber}</div>
-              {uid === "card" ? (
-                <div className="flex items-center">
-                  <div className="mr-2">Card code:</div>{" "}
-                  <ClipLoader size={20} />
+                <div>Patron ID: {Patronnumber}</div>
+                {uid === "card" ? (
+                  <div className="flex items-center">
+                    <div className="mr-2">Card code:</div>{" "}
+                    <ClipLoader size={20} />
+                  </div>
+                ) : (
+                  <div>Card code: {uid}</div>
+                )}
+                <div className="mt-3 w-full flex justify-end gap-3 text-white ">
+                  <div
+                    onClick={() => setScanID(false)}
+                    className="px-5 py-1 bg-red-700 hover:bg-red-800 cursor-pointer rounded-md shadow-md "
+                  >
+                    No
+                  </div>
+                  <div
+                    onClick={handleRegister}
+                    className="px-5 py-1 bg-green-700 hover:bg-green-800 rounded-md cursor-pointer shadow-md "
+                  >
+                    Yes
+                  </div>
                 </div>
-              ) : (
-                <div>Card code: {uid}</div>
-              )}
-              <div className="mt-3 w-full flex justify-end gap-3 text-white ">
-                <div
-                  onClick={() => setScanID(false)}
-                  className="px-5 py-1 bg-red-700 hover:bg-red-800 cursor-pointer rounded-md shadow-md "
-                >
-                  No
-                </div>
-                <div
-                  onClick={handleRegister}
-                  className="px-5 py-1 bg-green-700 hover:bg-green-800 rounded-md cursor-pointer shadow-md "
-                >
-                  Yes
-                </div>
-              </div>
+              </motion.div>
             </div>
-          </div>
-        ) : (
-          <div></div>
-        )}
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

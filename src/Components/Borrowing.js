@@ -145,7 +145,7 @@ function Borrowing() {
       const now = new Date();
 
       console.log(email, "gaga");
-      return;
+      
       emailjs
         .send(
           "service_xq3itn4",
@@ -290,7 +290,6 @@ function Borrowing() {
       return;
     }
 
-    return
 
     emailjs
       .send(
