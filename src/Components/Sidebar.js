@@ -27,6 +27,10 @@ function Sidebar({ setSelectedPage }) {
       });
   }
 
+  const navigateToSystem = () => {
+    navigate("/entrance");
+  };
+
   return (
     <div>
       <div className="w-full h-screen flex flex-col content-center items-center p-10">
@@ -236,6 +240,30 @@ function Sidebar({ setSelectedPage }) {
               />
             </svg>
             Account Manager
+          </div>
+
+          <div
+            className={`" ${
+              activeBar === "entrance" || activeBar === "entrance2"
+                ? "bg-[#c0772a] text-white pl-10"
+                : "hover:pl-10"
+            } w-full transition-all cursor-pointer items-center hover:text-white gap-3 flex px-5 py-3 rounded-md hover:bg-[#c0772a] "`}
+            onClick={navigateToSystem}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="size-6"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M1.5 7.125c0-1.036.84-1.875 1.875-1.875h6c1.036 0 1.875.84 1.875 1.875v3.75c0 1.036-.84 1.875-1.875 1.875h-6A1.875 1.875 0 0 1 1.5 10.875v-3.75Zm12 1.5c0-1.036.84-1.875 1.875-1.875h5.25c1.035 0 1.875.84 1.875 1.875v8.25c0 1.035-.84 1.875-1.875 1.875h-5.25a1.875 1.875 0 0 1-1.875-1.875v-8.25ZM3 16.125c0-1.036.84-1.875 1.875-1.875h5.25c1.036 0 1.875.84 1.875 1.875v2.25c0 1.035-.84 1.875-1.875 1.875h-5.25A1.875 1.875 0 0 1 3 18.375v-2.25Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+
+            <div>Entrance System</div>
           </div>
 
           <div className="w-full">

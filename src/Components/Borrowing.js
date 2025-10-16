@@ -137,6 +137,8 @@ function Borrowing() {
         dateReturn: "",
         dateBorrowed: "",
         currentBorrower: "",
+        returnEmail: false,
+        email: ""
       });
       updateHistoryReturn();
       toast.success("Successfully returned!");

@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 function EntanceSystem() {
   const [uid, setUid] = useState("");
-  const [userData, setUserData] = useState("Dasd");
+  const [userData, setUserData] = useState("");
   const [docId, setDocId] = useState("");
   const [timeouts, setTimeouts] = useState("");
   const [id, setID] = useState(false);
@@ -23,7 +23,7 @@ function EntanceSystem() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://192.168.254.103/uid");
+        const res = await fetch("http://192.168.254.100/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -151,6 +151,8 @@ function EntanceSystem() {
 
     return () => clearTimeout(timer);
   }, [userData, uid]);
+
+  console.log(userData)
 
   return (
     <div className=" w-full flex h-[calc(100vh-0px)]">

@@ -9,9 +9,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { SyncLoader } from "react-spinners";
+import emailjs from "@emailjs/browser";
 
 function Analytics() {
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,63 @@ function Analytics() {
   const [login, setLogin] = useState([]);
   const [logout, setLogout] = useState([]);
   const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    const checkDueBooks = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "BooksData"));
+        const now = new Date();
+
+        for (const d of snapshot.docs) {
+          const data = d.data();
+
+          if (
+            data.status === "Borrowed" &&
+            data.dateReturn &&
+            data.returnEmail === false
+          ) {
+            const returnDate = data.dateReturn.toDate();
+            const diffDays = Math.ceil(
+              (returnDate - now) / (1000 * 60 * 60 * 24)
+            );
+
+            if (diffDays <= 3 && diffDays >= 0) {
+              const emailParams = {
+                email: data.email,
+                book: data.title,
+                returntime: returnDate.toLocaleDateString(),
+                borrower_name: data.currentBorrower,
+                status: "Due",
+                hatdog: "Due on:",
+                names: data.currentBorrower,
+                message: `Thank you for returning ${data.title} to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
+              };
+
+              await emailjs.send(
+                "service_xq3itn4",
+                "template_m7hwnqb",
+                emailParams,
+                "5JJ4BU1mfv1J_lZ3I"
+              );
+
+              console.log(
+                `📧 Sent reminder to ${data.email} for book: ${data.title}`
+              );
+
+              await updateDoc(doc(db, "BooksData", d.id), {
+                returnEmail: true,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error checking due books:", err);
+      } finally {
+      }
+    };
+
+    checkDueBooks();
+  }, []);
 
   const months = [
     "Jan",
@@ -42,7 +100,6 @@ function Analytics() {
 
   useEffect(() => {
     const fetchChartData = async () => {
-
       try {
         if (dropDownName === "D1") {
           const snapshot = await getDocs(collection(db, "StudentHistory"));
@@ -66,7 +123,7 @@ function Analytics() {
           setChartData(formatted);
         } else if (dropDownName === "D2") {
           const snapshot = await getDocs(collection(db, "BooksHistory"));
-          const monthCounts = Array(12).fill(0); 
+          const monthCounts = Array(12).fill(0);
 
           snapshot.docs.forEach((doc) => {
             const data = doc.data();
@@ -149,7 +206,7 @@ function Analytics() {
 
     fetchingDetailsLeft();
     fetchingDetails();
-  }, []);
+  });
 
   return (
     <motion.div
