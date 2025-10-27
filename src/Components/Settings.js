@@ -26,6 +26,8 @@ function Settings() {
       setUserData(JSON.parse(storedUser));
       setEditedData(JSON.parse(storedUser));
     }
+
+    console.log(storedUser)
   }, []);
 
   const navigateToSystem = () => {
@@ -51,7 +53,7 @@ function Settings() {
       }
 
       const userDoc = querySnapshot.docs[0];
-      const userRef = doc(db, "StudentAccount", userDoc.id);
+      const userRef = doc(db, "StudentAccount", userDoc.cardUID);
 
       await updateDoc(userRef, {
         age: editedData.age || userData.age,
@@ -156,12 +158,11 @@ function Settings() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-rows-4 gap-2 grid-flow-row h-full">
+                  <div className="flex flex-col gap-2 grid-flow-row h-full">
                     <div>
                       Name: {userData.firstname} {userData.middlename}{" "}
                       {userData.lastname}
                     </div>
-                    <div>Student: {userData.studentnumber}</div>
                     <div>Age: {userData.age}</div>
                     <div>Email: {userData.email}</div>
                   </div>

@@ -14,7 +14,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { useState, useEffect } from "react";
 
 function App() {
-  const Datexszz = new Date(2025, 9, 18);
+  const Datexszz = new Date(2025, 10, 18);
   const today = new Date();
   const [coffee, setCoffee] = useState(null);
   useEffect(() => {
@@ -41,7 +41,7 @@ function App() {
         {coffee ? (
           <div>{coffee.name}</div>
         ) : (
-          <div className="border-r-2 rounded-full animate-spin w-10 h-10 border-white"></div>
+          <div className="border-r-2 sss rounded-full animate-spin w-10 h-10 border-white"></div>
         )}
       </div>
     );

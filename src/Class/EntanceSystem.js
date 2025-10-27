@@ -23,7 +23,7 @@ function EntanceSystem() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://192.168.254.100/uid");
+        const res = await fetch("http://10.222.56.125/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -175,8 +175,6 @@ function EntanceSystem() {
                 Name: {userData.firstname} {userData.middlename}{" "}
                 {userData.lastname}
               </p>
-              <p>ID Number: {userData.studentnumber}</p>
-              <p>Age: {userData.age}</p>
               <p>Email: {userData.email}</p>
               <p>
                 Time In:

@@ -37,7 +37,6 @@ function BackLog() {
     fetchBooks();
   }, []);
 
-  // Filter by search
   const filteredHistory = history.filter((book) => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -46,7 +45,6 @@ function BackLog() {
     );
   });
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -79,7 +77,6 @@ function BackLog() {
             <div className="flex justify-between items-center uppercase text-lg">
               <div>Notification</div>
 
-              {/* 🔍 Search box */}
               <div className="border border-gray-600 rounded-md px-3 py-1">
                 <input
                   className="focus:outline-none text-sm"
@@ -87,7 +84,7 @@ function BackLog() {
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
-                    setCurrentPage(1); // reset to first page when searching
+                    setCurrentPage(1);
                   }}
                 />
               </div>
@@ -103,13 +100,13 @@ function BackLog() {
                   currentItems.map((book, index) => (
                     <motion.div
                       key={index}
-                      className="flex justify-between items-center border-gray-400 px-2 border-b"
+                      className="grid grid-cols-3 odd:bg-gray-100 justify-between items-center border-gray-400 px-2 border-b"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <div>{book.status}</div>
-                      <div className="flex py-2 text-sm border-l border-gray-400 pl-10">
+                      <div className="col-span-2" >{book.status}</div>
+                      <div className="flex text-right w-full justify-end py-2 text-sm border-l border-gray-400 pl-10">
                         {book.date}
                       </div>
                     </motion.div>
