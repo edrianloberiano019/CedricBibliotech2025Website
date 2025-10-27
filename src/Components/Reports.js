@@ -40,7 +40,7 @@ function Reports() {
     >
       <div className="w-full p-10 flex flex-col h-full bg-[#c0772a] rounded-xl">
         <div className="text-white text-3xl h-[5%] font-kanit uppercase">
-          Account Manager
+          Account Logs
         </div>
 
         <div className="flex relative h-[95%]">
@@ -50,9 +50,9 @@ function Reports() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 1, type: "spring" }}
           >
-            <div className="grid grid-cols-7 gap-3 w-full uppercase border-b text-lg">
+            <div className="grid grid-cols-6 gap-3 w-full uppercase border-b text-lg">
               <div className="col-span-3">Student name</div>
-              <div>Grade Level</div>
+              {/* <div>Grade Level</div> */}
               <div>Status</div>
               <div>time-in</div>
               <div>time-out</div>
@@ -67,7 +67,7 @@ function Reports() {
                 {students.map((student, index) => (
                   <motion.div
                     key={index}
-                    className="grid grid-cols-7 gap-3 first-letter:uppercase py-2 px-5 text-lg"
+                    className="grid grid-cols-6 gap-3 first-letter:uppercase py-2 px-5 text-lg"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.1 }}
@@ -75,7 +75,7 @@ function Reports() {
                     <div className="first-letter:uppercase col-span-3 truncate">
                       {student.name}
                     </div>
-                    <div className="text-center"></div>
+                    {/* <div className="text-center"></div> */}
                     <div className="flex justify-center">
                       {student.timeout ? (
                         <div className="bg-red-600  w-5 rounded-full h-5"></div>

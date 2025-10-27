@@ -19,6 +19,7 @@ import { ClipLoader } from "react-spinners";
 import emailjs from "@emailjs/browser";
 
 function Borrowing() {
+  const [bookTitle, setBookTitle] = useState("")
   const [modalBorrow, setModalBorrow] = useState(false);
   const [modalFinal, setModalFinal] = useState(false);
   const [modalView, setModalView] = useState(false);
@@ -48,6 +49,7 @@ function Borrowing() {
   const [namesecond, setNameSecond] = useState("");
   const [run, setRun] = useState(false);
   const [loading3, setLoading3] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("All");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -84,8 +86,7 @@ function Borrowing() {
           const docData = docSnap.data();
           setID(false);
           setUserData(docData);
-          console.log("docData:", docData);
-          console.log("docData:", docData.email);
+        
           const fullName = `${docData.firstname || ""} ${
             docData.middlename || ""
           } ${docData.lastname || ""}`.trim();
@@ -99,10 +100,8 @@ function Borrowing() {
           setDocId(null);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
       } finally {
         setUid("");
-        console.log(uid, "haha");
       }
     };
     if (run) {
@@ -113,7 +112,7 @@ function Borrowing() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://10.51.47.131/uid");
+        const res = await fetch("http://10.222.56.131/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -138,7 +137,7 @@ function Borrowing() {
         dateBorrowed: "",
         currentBorrower: "",
         returnEmail: false,
-        email: ""
+        email: "",
       });
       updateHistoryReturn();
       toast.success("Successfully returned!");
@@ -147,30 +146,24 @@ function Borrowing() {
       const now = new Date();
 
       console.log(email, "gaga");
-      
+
       emailjs
         .send(
           "service_xq3itn4",
           "template_m7hwnqb",
           {
             name: "Caloocan City E-Library",
-            book: document,
+            book: bookTitle,
             status: "returned",
             email: email,
             from_name: "React User",
-            message: `Thank you for returning ${document} to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
+            message: `Thank you for returning ${bookTitle} to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
             time: now.toLocaleDateString() + " " + now.toLocaleTimeString(),
             names: namesecond,
           },
           "5JJ4BU1mfv1J_lZ3I"
         )
-        .then((response) => {
-          console.log("SUCCESS!", response.status, response.text);
-        })
-        .catch((err) => {
-          console.error("FAILED...", err);
-          alert("Email failed: " + err.text);
-        });
+       
     } catch (error) {
       toast.error("Error updating document: ", error);
     }
@@ -183,7 +176,6 @@ function Borrowing() {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        console.log("No matching books found.");
         setDetails(null);
         return;
       }
@@ -191,7 +183,6 @@ function Borrowing() {
       const doc = querySnapshot.docs[0];
       const bookData = { id: doc.id, ...doc.data() };
 
-      console.log("📚 Found book:", bookData);
       setDetails(bookData);
       setEmail(bookData.email);
       setNameSecond(bookData.currentBorrower);
@@ -200,13 +191,16 @@ function Borrowing() {
     } finally {
     }
   };
-
   const filteredBooks = books.filter((book) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       book.title?.toLowerCase().includes(query) ||
-      book.author?.toLowerCase().includes(query)
-    );
+      book.author?.toLowerCase().includes(query);
+
+    const matchesStatus =
+      filterStatus === "All" ? true : book.status === filterStatus;
+
+    return matchesSearch && matchesStatus;
   });
 
   const updateNext = async (borrowName) => {
@@ -219,7 +213,6 @@ function Borrowing() {
 
     if (choseDate && choseTime) {
       try {
-        console.log("executed");
         await updateDoc(userRef, {
           status: "Borrowed",
           dateReturn: dateObj,
@@ -229,9 +222,9 @@ function Borrowing() {
         });
 
         await addDoc(userRef2, {
-          status: name + " " + `borrowed the book named "${document}"`,
+          status: name + " " + `borrowed the book named "${bookTitle}"`,
           date: now.toLocaleString(),
-          indicator: "borrowed"
+          indicator: "borrowed",
         });
         setModalTap(false);
         toast.success("Successfully borrowed!");
@@ -258,7 +251,7 @@ function Borrowing() {
 
     try {
       await addDoc(userRef2, {
-        status: `Returned the book named "${document}"`,
+        status: `Returned the book named "${bookTitle}"`,
         date: now.toLocaleString(),
       });
       setModalTap(false);
@@ -292,7 +285,6 @@ function Borrowing() {
       return;
     }
 
-
     emailjs
       .send(
         "service_xq3itn4",
@@ -307,7 +299,7 @@ function Borrowing() {
           status: "borrowed",
           returntime:
             datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString(),
-          message: `Thank you for borrowing ${document} from the Caloocan City E-Library. We hope you enjoy reading this book and find it informative, entertaining, or inspiring. Please take good care of this book and return it by the due date so others can also enjoy it. Your support helps us provide a wide variety of resources for the community. Happy reading and we look forward to welcoming you back soon!`,
+          message: `Thank you for borrowing ${bookTitle} from the Caloocan City E-Library. We hope you enjoy reading this book and find it informative, entertaining, or inspiring. Please take good care of this book and return it by the due date so others can also enjoy it. Your support helps us provide a wide variety of resources for the community. Happy reading and we look forward to welcoming you back soon!`,
           time: now.toLocaleDateString() + " " + now.toLocaleTimeString(),
         },
         "5JJ4BU1mfv1J_lZ3I"
@@ -334,7 +326,7 @@ function Borrowing() {
           </div>
         </div>
 
-        <div className="h-[10%] flex justify-start items-center">
+        <div className="h-[10%] flex justify-between items-center">
           <div className="flex ">
             <input
               className="px-5 py-2 rounded-md"
@@ -343,6 +335,32 @@ function Borrowing() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+          </div>
+          <div className="flex flex-row gap-2">
+            <div
+              onClick={() => setFilterStatus("All")}
+              className={`bg-yellow-600 border-2 border-yellow-900 rounded-md px-2 shadow-md font-bold uppercase p-1 cursor-pointer ${
+                filterStatus === "All" ? "ring-2 ring-white" : ""
+              }`}
+            >
+              ALL
+            </div>
+            <div
+              onClick={() => setFilterStatus("Borrowed")}
+              className={`bg-yellow-600 border-2 border-yellow-900 rounded-md px-2 shadow-md font-bold uppercase p-1 cursor-pointer ${
+                filterStatus === "Borrowed" ? "ring-2 ring-white" : ""
+              }`}
+            >
+              Borrowed
+            </div>
+            <div
+              onClick={() => setFilterStatus("Available")}
+              className={`bg-yellow-600 border-2 border-yellow-900 rounded-md px-2 shadow-md font-bold uppercase p-1 cursor-pointer ${
+                filterStatus === "Available" ? "ring-2 ring-white" : ""
+              }`}
+            >
+              Available
+            </div>
           </div>
         </div>
         <motion.div
@@ -398,7 +416,8 @@ function Borrowing() {
                         <div
                           onClick={() => {
                             setModalBorrow(true);
-                            setDocumentID(book.title);
+                            setDocumentID(book.id);
+                            setBookTitle(book.title)
                           }}
                           className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-green-700 hover:bg-green-800 transition-all rounded-md shadow-md"
                         >
@@ -409,7 +428,8 @@ function Borrowing() {
                           onClick={() => {
                             setModalView(true);
                             searchDetails(book.title);
-                            setDocumentID(book.title);
+                            setDocumentID(book.id);
+                            setBookTitle(book.title)
                           }}
                           className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-blue-700 hover:bg-blue-800 transition-all rounded-md shadow-md"
                         >
@@ -532,7 +552,7 @@ function Borrowing() {
 
                         <div className="grid grid-flow-row gap-6 grid-cols-3 bg-white text-black px-4 py-2 rounded-b-md text-sm">
                           <div className="text-l text-ellipsis truncate">
-                            {document}{" "}
+                            {bookTitle}{" "}
                           </div>
                           <div className="textxl">
                             {globaldatetime

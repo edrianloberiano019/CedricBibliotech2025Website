@@ -54,7 +54,7 @@ function Analytics() {
                 status: "Due",
                 hatdog: "Due on:",
                 names: data.currentBorrower,
-                message: `Thank you for returning ${data.title} to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
+                message: `The book named ${data.title} is due on ${returnDate.toLocaleDateString()} return it to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
               };
 
               await emailjs.send(

@@ -57,6 +57,7 @@ function Login() {
         const userData = querySnapshot.docs[0].data();
 
         localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("access", userData.accessLevel);
 
         if (
           userData.accessLevel === "Admin" ||
@@ -257,11 +258,7 @@ function Login() {
                   </div>
                 )}
               </div>
-              <div className="w-full flex justify-end">
-                <div onClick={() => setEmails(true)} className="cursor-pointer">
-                  Forgot Password?
-                </div>
-              </div>
+             
               <button
                 disabled={loading}
                 className={`${
