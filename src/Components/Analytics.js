@@ -9,7 +9,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  Timestamp,
+  deleteDoc
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { SyncLoader } from "react-spinners";
 import emailjs from "@emailjs/browser";
@@ -25,6 +32,90 @@ function Analytics() {
   const [login, setLogin] = useState([]);
   const [logout, setLogout] = useState([]);
   const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    const checkArchiveTimes = async () => {
+      try {
+        const studentRef = collection(db, "StudentAccount");
+        const snapshot = await getDocs(studentRef);
+        const now = new Date();
+
+        for (const studentDoc of snapshot.docs) {
+          const data = studentDoc.data();
+          const { archivetime, setPermission } = data;
+
+          if (!archivetime || setPermission === "Access Denied") continue;
+
+          const archiveDate = archivetime.toDate();
+
+          const monthsDifference =
+            (now.getFullYear() - archiveDate.getFullYear()) * 12 +
+            (now.getMonth() - archiveDate.getMonth());
+
+          if (monthsDifference >= 3) {
+            const studentDocRef = doc(db, "StudentAccount", studentDoc.id);
+            await updateDoc(studentDocRef, {
+              setPermission: "Access Denied",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking archive times:", error);
+      }
+    };
+
+    checkArchiveTimes();
+  }, []);
+
+  useEffect(() => {
+  const checkReservations = async () => {
+    try {
+      const reservedRef = collection(db, "ReservedBooks");
+      const reservedSnap = await getDocs(reservedRef);
+      const now = new Date();
+
+      for (const docSnap of reservedSnap.docs) {
+        const data = docSnap.data();
+        if (!data.datetime || !data.id) continue;
+
+        const reservedDate = new Date(data.datetime);
+        const diffHours = (now - reservedDate) / (1000 * 60 * 60);
+
+        if (diffHours >= 24) {
+          console.log(`⏰ Auto-returning: ${data.title}`);
+
+          // 1️⃣ Delete the reservation
+          await deleteDoc(doc(db, "ReservedBooks", docSnap.id));
+
+          // 2️⃣ Find matching book in BooksData
+          const booksRef = collection(db, "BooksData");
+          const booksSnap = await getDocs(booksRef);
+
+          const matchingBook = booksSnap.docs.find(
+            (b) => b.data().id === data.id // match by field, not doc ID
+          );
+
+          if (matchingBook) {
+            const bookRef = doc(db, "BooksData", matchingBook.id);
+            const currentQty = Number(matchingBook.data().quantity || 0);
+            await updateDoc(bookRef, { quantity: currentQty + 1 });
+
+            console.log(`✅ Returned ${data.title}, new quantity: ${currentQty + 1}`);
+          } else {
+            console.warn(`⚠️ No matching book found in BooksData for ID: ${data.id}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in auto-return process:", error);
+    }
+  };
+
+  // Run immediately and every 5 minutes
+  checkReservations();
+  const interval = setInterval(checkReservations, 5 * 60 * 1000);
+  return () => clearInterval(interval);
+}, []);
 
   useEffect(() => {
     const checkDueBooks = async () => {
@@ -54,7 +145,9 @@ function Analytics() {
                 status: "Due",
                 hatdog: "Due on:",
                 names: data.currentBorrower,
-                message: `The book named ${data.title} is due on ${returnDate.toLocaleDateString()} return it to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
+                message: `The book named ${
+                  data.title
+                } is due on ${returnDate.toLocaleDateString()} return it to the Caloocan City E-Library. We truly appreciate your cooperation in helping us keep our collection well-maintained and accessible to all members of the community. By returning your borrowed books on time, you make it possible for other readers to enjoy the same resources and continue their learning journey. Your support plays an important role in promoting the joy of reading and lifelong learning within our city. We look forward to serving you again soon and hope you find more books that inspire, inform, and entertain you.`,
               };
 
               await emailjs.send(
@@ -62,10 +155,6 @@ function Analytics() {
                 "template_m7hwnqb",
                 emailParams,
                 "5JJ4BU1mfv1J_lZ3I"
-              );
-
-              console.log(
-                `📧 Sent reminder to ${data.email} for book: ${data.title}`
               );
 
               await updateDoc(doc(db, "BooksData", d.id), {

@@ -21,7 +21,7 @@ function BookManager() {
   const [history, setHistory] = useState([]);
   const [create, setCreate] = useState(false);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Adventure");
+  const [category, setCategory] = useState("");
   const [year, setYear] = useState("");
   const [author, setAuthor] = useState("");
   const [statik, setStatik] = useState(1);
@@ -29,13 +29,15 @@ function BookManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteValue, setDeleteValue] = useState("");
   const [update, setUpdate] = useState(false);
-  const [selected, setSelected] = useState("Adventure");
+  const [selected, setSelected] = useState("");
   const [updateYear, setUpdateYear] = useState("");
   const [updateTitle, setUpdateTitle] = useState("");
   const [updateAuthor, setUpdateAuthor] = useState("");
   const [currentUpdateDocId, setCurrentUpdateDocId] = useState(null);
   const [open, setOpen] = useState(false);
+  const [quantity, setQuantity] = useState(0)
   const [open2, setOpen2] = useState(false);
+  const [updateQuantity, setUpdateQuantity] = useState("")
 
   const options = [
     "Adventure",
@@ -112,12 +114,12 @@ function BookManager() {
     const maxAttempts = 10;
 
     for (let i = 0; i < maxAttempts; i++) {
-      const randomId = Math.floor(Math.random() * 100000) + 1; // 1 to 100000
+      const randomId = Math.floor(Math.random() * 100000) + 1;
       const docRef = doc(db, "BooksData", randomId.toString());
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        return randomId.toString(); // found a unique ID
+        return randomId.toString();
       }
     }
 
@@ -126,9 +128,8 @@ function BookManager() {
 
   const handleCreateBook = async () => {
     setLoading2(true);
-
     try {
-      if (!title || !year || !category || !author) {
+      if (!title || !year || !category || !author || !quantity) {
         toast.error("Please fill all fields.");
         return;
       }
@@ -143,6 +144,7 @@ function BookManager() {
         dateReturn: "",
         status: "Available",
         title,
+        quantity,
         year,
         returnEmail: false,
       });
@@ -185,7 +187,10 @@ function BookManager() {
       return;
     }
 
-    console.log(currentUpdateDocId, "eto")
+    if(updateYear.length < 4) {
+      toast.error("The year must be 4 numbers at least.")
+      return
+    }
 
     setLoading2(true);
     try {
@@ -195,6 +200,7 @@ function BookManager() {
         author: updateAuthor,
         category: selected,
         year: updateYear,
+        quantity: updateQuantity
       });
 
       toast.success("Book updated successfully!");
@@ -228,7 +234,7 @@ function BookManager() {
         <div className="flex items-center content-center h-[10%] justify-between">
           <div className="flex ">
             <input
-              className="px-5 py-2 rounded-md"
+              className="px-5 py-2 border border-black rounded-md"
               type="text"
               placeholder="Search"
               value={searchQuery}
@@ -247,20 +253,21 @@ function BookManager() {
         </div>
 
         <motion.div
-          className="w-full p-10 rounded-md relative h-[85%] bg-white shadow-md flex flex-col"
+          className="w-full p-10 rounde rounded-md border border-black relative h-[85%] bg-white shadow-md flex flex-col"
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 1, type: "spring" }}
         >
           <div className="flex">
-            <div className="grid w-full grid-cols-6 gap-2 uppercase border-b pb-3 text-lg">
+            <div className="grid w-full grid-cols-7 gap-2 uppercase border-b pb-3 text-base">
               <div className="col-span-2">status</div>
+              <div className="text-center" >Quantity</div>
               <div>Book Title</div>
               <div className="">Time Borrowed</div>
               <div className="">Time Returned</div>
             </div>
           </div>
-          <div className="overflow-y-auto py-2 flex-1">
+          <div className="overflow-y-auto  flex-1">
             {loading ? (
               <div className="w-full h-full flex justify-center items-center">
                 <SyncLoader size={10} />
@@ -268,10 +275,10 @@ function BookManager() {
             ) : (
               <div className="">
                 {filteredHistory.map((historyx, index) => (
-                  <div className="flex pb-3 ">
+                  <div key={historyx.id} className="flex border-b py-2 ">
                     <motion.div
                       key={index}
-                      className="grid grid-cols-6 items-center w-full gap-2 text-base"
+                      className="grid grid-cols-7 items-center w-full gap-2 text-base"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.1 }}
@@ -287,13 +294,22 @@ function BookManager() {
                           </div>
                         )}
                       </div>
+                      <div className="truncate text-center">
+                        {historyx.quantity ? historyx.quantity : "0"}
+                      </div>
                       <div>
                         {historyx.status === "Borrowed" ? (
-                          <div className="text-black truncate text-ellipsis">
+                          <div
+                            className="text-black truncate text-ellipsis"
+                            title={historyx.title}
+                          >
                             {historyx.title}
                           </div>
                         ) : (
-                          <div className="text-black truncate text-ellipsis">
+                          <div
+                            className="text-black truncate text-ellipsis"
+                            title={historyx.title}
+                          >
                             {historyx.title}
                           </div>
                         )}
@@ -317,6 +333,11 @@ function BookManager() {
                               onClick={() => {
                                 setUpdate(true);
                                 setCurrentUpdateDocId(historyx.id);
+                                setUpdateTitle(historyx.title || "");
+                                setUpdateAuthor(historyx.author || "");
+                                setSelected(historyx.category || "");
+                                setUpdateYear(historyx.year || "");
+                                setUpdateQuantity(historyx.quantity || "1");
                               }}
                               className="flex bg-blue-700 hover:bg-blue-800 py-2 items-center text-white px-2 rounded-md shadow-md transition-all cursor-pointer"
                             >
@@ -395,14 +416,14 @@ function BookManager() {
               >
                 <div className="bg-[#f5b066] p-4 rounded-md flex flex-col shadow-xl text-black">
                   <div className="uppercase text-2xl font-kanit">
-                    Create a book
+                    add a book
                   </div>
-                  <div className="mt-5 gap-3 flex flex-col">
-                    <div className="flex gap-3 uppercase">
+                  <div className="mt-5 gap-2 w-full flex flex-col">
+                    <div className="gap-3 uppercase grid grid-cols-2">
                       <div>
                         <div>Title</div>
                         <input
-                          className="px-3 py-2 rounded-md shadow-md"
+                          className="px-3 py-2 w-full rounded-md shadow-md"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                         />
@@ -411,7 +432,7 @@ function BookManager() {
                       <div className="">
                         <div>Author</div>
                         <input
-                          className="px-3 py-2 rounded-md shadow-md"
+                          className="px-3 py-2 w-full rounded-md shadow-md"
                           value={author}
                           onChange={(e) => {
                             const value = e.target.value;
@@ -427,94 +448,11 @@ function BookManager() {
                       <div className=" flex w-full flex-col items-start">
                         <div className=" flex w-full">Category</div>
                         <div className="relative z-20 inline-block text-left w-full">
-                          <div
-                            onClick={() => {
-                              setOpen(!open);
-                              setOpen2(false);
-                            }}
-                            className="px-4 py-2 w-full cursor-pointer bg-white shadow-md text-black rounded-md"
-                          >
-                            {category}
-                          </div>
-
-                          {open && (
-                            <div className="absolute mt-2 bg-[#dda05e] w-full overflow-hidden rounded-md shadow-lg">
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Adventure");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Adventure
-                              </div>
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Classic");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Classic
-                              </div>
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Comics");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Comics
-                              </div>
-
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Educational");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Educational
-                              </div>
-
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Romance");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Romance
-                              </div>
-
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Satire");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Satire
-                              </div>
-
-                              <div
-                                value={category}
-                                onClick={() => {
-                                  setCategory("Others..");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Others..
-                              </div>
-                            </div>
-                          )}
+                          <input
+                            value={category}
+                            className="px-3 py-2 rounded-md shadow-md"
+                            onChange={(e) => setCategory(e.target.value)}
+                          />
                         </div>
                       </div>
 
@@ -534,6 +472,17 @@ function BookManager() {
                           type="number"
                           value={year}
                           onChange={(e) => setYear(e.target.value)}
+                          maxLength={4}
+                        />
+                      </div>
+
+                      <div>
+                        <div>Quantity</div>
+                        <input
+                          className="px-3 py-2 rounded-md shadow-md"
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
                         />
                       </div>
                     </div>
@@ -548,7 +497,7 @@ function BookManager() {
                             : " bg-green-600 hover:bg-green-700 cursor-pointer"
                         }  px-3 py-2   transition-all rounded-md shadow-md font-kanit uppercase "`}
                       >
-                        {loading2 ? <div>Creating...</div> : <div>Create</div>}
+                        {loading2 ? <div>Adding...</div> : <div>add</div>}
                       </button>
                     </div>
                   </div>
@@ -608,94 +557,11 @@ function BookManager() {
                       <div className=" flex flex-col items-start  mt-3">
                         <div className=" flex">Category</div>
                         <div className="relative z-20 inline-block text-left w-full">
-                          <div
-                            onClick={() => {
-                              setOpen(!open);
-                              setOpen2(false);
-                            }}
-                            className="px-4 py-2 w-full cursor-pointer bg-white shadow-md text-black rounded-md"
-                          >
-                            {selected}
-                          </div>
-
-                          {open && (
-                            <div className="absolute mt-2 bg-[#dda05e] w-full overflow-hidden rounded-md shadow-lg">
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Adventure");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Adventure
-                              </div>
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Classic");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Classic
-                              </div>
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Comics");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Comics
-                              </div>
-
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Educational");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Educational
-                              </div>
-
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Romance");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Romance
-                              </div>
-
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Satire");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Satire
-                              </div>
-
-                              <div
-                                value={selected}
-                                onClick={() => {
-                                  setSelected("Others..");
-                                  setOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 bg-[#dda05e] transition-all cursor-pointer"
-                              >
-                                Others..
-                              </div>
-                            </div>
-                          )}
+                          <input
+                            className="px-2 py-1 focus:outline-none w-full  rounded-md shadow-md "
+                            value={selected}
+                            onChange={(e) => setSelected(e.target.value)}
+                          />
                         </div>
                       </div>
                       <div>
@@ -706,6 +572,20 @@ function BookManager() {
                             const value = e.target.value;
                             if (/^\d{0,4}$/.test(value)) {
                               setUpdateYear(value);
+                            }
+                          }}
+                          className="px-2 py-1 rounded-md focus:outline-none shadow-md w-full"
+                        />
+                      </div>
+
+                       <div>
+                        <div>Quantity</div>
+                        <input
+                          value={updateQuantity}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d{0,4}$/.test(value)) {
+                              setUpdateQuantity(value);
                             }
                           }}
                           className="px-2 py-1 rounded-md focus:outline-none shadow-md w-full"

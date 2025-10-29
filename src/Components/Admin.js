@@ -11,6 +11,8 @@ import {
   query,
   deleteDoc,
   updateDoc,
+  getDoc,
+  where
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
@@ -18,6 +20,7 @@ import { ClipLoader } from "react-spinners";
 function Admin() {
   const [value, setValue] = useState("");
   const [value2, setValue2] = useState("");
+  const [borrowerAnalytics, setBorrowerAnalytics] = useState(false);
   const [dropdown, setDropDown] = useState("tago");
   const [dropdown2, setDropDown2] = useState("tago");
   const [year, setYear] = useState("Select year level");
@@ -30,7 +33,7 @@ function Admin() {
   const [age, setAge] = useState("");
   const [Patronnumber, setPatronNumber] = useState("02000");
   const [confirmpassword, setConfirmPassword] = useState("caloocan");
-  const [accessLevel, setAccessLevel] = useState("Patron");
+  const [accessLevel, setAccessLevel] = useState("Borrower");
   const [scanID, setScanID] = useState(false);
   const [permission, setPermission] = useState("Access Granted");
   const [uid, setUid] = useState("");
@@ -45,6 +48,7 @@ function Admin() {
   const [loading2, setLoading2] = useState(false);
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [students, setStudents] = useState([]);
 
   const storedUser = localStorage.getItem("access");
 
@@ -65,6 +69,53 @@ function Admin() {
     };
 
     fetchAccounts();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const borrowerQuery = query(
+          collection(db, "StudentAccount"),
+          where("accessLevel", "==", "Borrower")
+        );
+        const studentAccountSnap = await getDocs(borrowerQuery);
+
+        const studentHistorySnap = await getDocs(
+          collection(db, "StudentHistory")
+        );
+
+        const accounts = studentAccountSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        const histories = studentHistorySnap.docs.map((doc) => doc.data());
+
+        const results = accounts.map((student) => {
+          const fullName = `${student.firstname} ${student.lastname}`
+            .trim()
+            .toLowerCase();
+          const visitCount = histories.filter(
+            (h) => h.name && h.name.trim().toLowerCase() === fullName
+          ).length;
+
+          return {
+            name: `${student.firstname} ${student.lastname}`,
+            email: student.email,
+            status: student.setPermission,
+            countVisit: visitCount,
+            cardUID: student.cardUID,
+          };
+        });
+
+        setStudents(results);
+        console.log("📘 Borrower accounts:", results);
+      } catch (error) {
+        console.error("Error fetching borrower data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -228,6 +279,40 @@ function Admin() {
       toast.error("Failed to reset password. Try again.");
     } finally {
       setLoading2(false);
+    }
+  };
+
+  const handleArchive = async (student) => {
+    try {
+      if (!student || !student.cardUID) {
+        console.error("Missing student or cardUID:", student);
+        toast.error("Student data incomplete.");
+        return;
+      }
+
+      const studentRef = doc(db, "StudentAccount", student.cardUID);
+      const archiveRef = doc(db, "ArchiveAccount", student.cardUID);
+
+      const studentSnap = await getDoc(studentRef);
+      if (!studentSnap.exists()) {
+        console.error("Student not found:", student.cardUID);
+        toast.error("Student not found in StudentAccount.");
+        return;
+      }
+
+      const studentData = studentSnap.data();
+
+      const archivedData = {
+        ...studentData,
+      };
+
+      await setDoc(archiveRef, archivedData);
+
+      await deleteDoc(studentRef);
+
+      toast.success("Student archived successfully!");
+    } catch (error) {
+      toast.error("Error archiving student.");
     }
   };
 
@@ -459,12 +544,12 @@ function Admin() {
                             <div className=" bg-white  rounded-md overflow-hidden flex justify-start flex-col">
                               <div
                                 onClick={() => {
-                                  setAccessLevel("Patron");
+                                  setAccessLevel("Borrower");
                                   setTransit(true);
                                 }}
                                 className="px-5 py-2 hover:bg-gray-300 transition-all cursor-pointer "
                               >
-                                Patron
+                                Borrower
                               </div>
                               <div
                                 onClick={() => {
@@ -509,7 +594,14 @@ function Admin() {
               </div>
             </div>
             <div className="w-full flex items-end flex-col overflow-auto pl-5 h-full">
-              <div className="pb-2 flex">
+              <div className="pb-2 flex items-center gap-2">
+                <div
+                  onClick={() => setBorrowerAnalytics(true)}
+                  className="bg-[#fc8f1c] border-2 border-yellow-800 text-black hover:bg-[#e08019] transition-all cursor-pointer font-bold uppercase text-sm px-3 py-2  rounded-md shadow-md "
+                >
+                  Borrower analytics
+                </div>
+
                 <div className="border rounded-md border-gray-600 shadow-sm">
                   <input
                     placeholder="Search..."
@@ -519,15 +611,16 @@ function Admin() {
                   />
                 </div>
               </div>
-              <div className="grid bg-gray-300  text-black px-3 gap-3 rounded-t-md py-2 text-sm font-bold uppercase grid-cols-5 w-full">
+              <div className="grid border border-black bg-gray-300  text-black px-3 gap-3 rounded-t-md py-2 text-sm font-bold uppercase grid-cols-6 w-full">
                 <div>Full name:</div>
                 <div>ID Number:</div>
                 <div>Type:</div>
+                <div className="items-center flex justify-center">status:</div>
                 <div>Email:</div>
               </div>
               <div className="w-full flex flex-col rounded-b-md overflow-y-auto h-[60vh]">
                 {accounts.length === 0 ? (
-                  <div className="text-center py-5 text-gray-600">
+                  <div className="text-center bg-gray-300 border-b border-x border-black py-3 rounded-b-md text-sm text-gray-600">
                     No account found
                   </div>
                 ) : (
@@ -552,7 +645,7 @@ function Admin() {
                       .map((acc, index) => (
                         <motion.div
                           key={acc.id}
-                          className="grid text-black even:bg-gray-100 pl-3 items-center text-sm gap-3 border-b py-2 grid-cols-5 w-full bg-white"
+                          className="grid text-black even:bg-gray-100 px-3 border-x border-black last:shadow-md items-center text-sm gap-3 border-b last:rounded-b-md py-2 grid-cols-6 w-full bg-white"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: index * 0.1 }}
@@ -566,7 +659,24 @@ function Admin() {
                             {acc.cardUID}
                           </div>
                           <div className="truncate" title={acc.accessLevel}>
-                            {acc.accessLevel}
+                            {acc.accessLevel === "Patron"
+                              ? "Borrower"
+                              : acc.accessLevel}
+                          </div>
+                          <div className="truncate text-xs">
+                            {acc.setPermission === "Access Granted" ? (
+                              <div className="flex justify-center">
+                                <div className="px-3 py-1  rounded-md uppercase text-white shadow-md bg-green-600">
+                                  active
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex justify-center">
+                                <div className="px-3 py-1  rounded-md uppercase text-white shadow-md bg-red-600">
+                                  inactive
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="truncate" title={acc.email}>
                             {acc.email}
@@ -574,7 +684,7 @@ function Admin() {
                           <div className="flex gap-2 justify-end mr-2">
                             {storedUser === "Admin" && (
                               <div className="flex gap-2">
-                                {acc.accessLevel === "Patron" ? (
+                                {acc.accessLevel === "Borrower" ? (
                                   <div className="px-4"></div>
                                 ) : (
                                   <div
@@ -641,7 +751,7 @@ function Admin() {
                             .includes(searchTerm.toLowerCase()))
                       );
                     }).length === 0 && (
-                      <div className="text-center italic bg-white rounded-b-md py-5 text-gray-400">
+                      <div className="text-center bg-gray-200 border-b border-x border-black py-3 rounded-b-md text-sm text-gray-600">
                         No account found
                       </div>
                     )}
@@ -765,7 +875,11 @@ function Admin() {
                   <button
                     disabled={loading2}
                     onClick={handleRegister}
-                    className={`" ${loading2 ? " bg-gray-700 text-white hover:bg-gray-800 cursor-not-allowed" : "bg-green-700 hover:bg-green-800 cursor-pointer "} px-5 py-1  rounded-md  shadow-md "`}
+                    className={`" ${
+                      loading2
+                        ? " bg-gray-700 text-white hover:bg-gray-800 cursor-not-allowed"
+                        : "bg-green-700 hover:bg-green-800 cursor-pointer "
+                    } px-5 py-1  rounded-md  shadow-md "`}
                   >
                     {loading2 ? "Creating..." : "Yes"}
                   </button>
@@ -817,6 +931,88 @@ function Admin() {
                   >
                     Done
                   </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {borrowerAnalytics && (
+            <div className="absolute top-0 left-0 justify-center flex items-center w-full h-full z-20">
+              <motion.div
+                onClick={() => setBorrowerAnalytics(false)}
+                className="absolute cursor-pointer backdrop-blur-sm rounded-xl top-0 left-0 z-10 bg-[#0007] w-full h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              ></motion.div>
+
+              <motion.div
+                className="bg-white max-h-[80%] flex flex-col rounded-xl max-w-[95%] p-10 z-20"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.6, type: "spring" }}
+              >
+                <div className="grid bg-gray-300 gap-3 px-3 py-2 rounded-t-md border border-black uppercase font-bold grid-cols-5">
+                  <div>Name</div>
+                  <div>Email</div>
+                  <div className="text-center">Status</div>
+                  <div className="text-center">Count Visit</div>
+                </div>
+
+                <div className="overflow-auto">
+                  {students.map((student, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-5 odd:bg-gray-200 items-center px-3 gap-3 last:shadow-md border-x border-b border-black last:rounded-b-md py-2 bg-gray-100 text-sm"
+                    >
+                      <div>{student.name}</div>
+                      <div>{student.email}</div>
+                      <div className="flex text-center justify-center">
+                        {student.status === "Access Granted" ? (
+                          <div className="flex">
+                            <div className="px-3 py-1  rounded-md uppercase text-white shadow-md bg-green-600">
+                              active
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-center items-center">
+                            <div className="px-3 py-1  rounded-md uppercase text-white shadow-md bg-red-600">
+                              inactive
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">{student.countVisit}</div>
+                      <div className="flex justify-end">
+                        {student.status === "Access Granted" ? (
+                          ""
+                        ) : (
+                          <div
+                            onClick={() => handleArchive(student)}
+                            className="p-1 bg-blue-500 rounded-md border-2 border-blue-800 hover:bg-blue-600 transition-all shadow-md cursor-pointer text-white"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke-width="1.5"
+                              stroke="currentColor"
+                              class="size-5"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             </div>

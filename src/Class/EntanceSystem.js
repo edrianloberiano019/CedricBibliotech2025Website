@@ -8,6 +8,8 @@ import {
   doc,
   addDoc,
   setDoc,
+  getDoc,
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { AnimatePresence, motion } from "framer-motion";
@@ -71,70 +73,106 @@ function EntanceSystem() {
 
   useEffect(() => {
     const updateTime = async () => {
-      if (!docId || !userData) return;
-
-      const now = new Date();
-      let fieldToUpdate = "";
-
-      const customDate = now.toLocaleString();
-      const safeId =
-        customDate.replace(/[\/\\#?]/g, "_") || `history_${Date.now()}`;
-
-      if (!userData.timein) {
-        fieldToUpdate = "timein";
-        const docRef = await addDoc(collection(db, "StudentHistory"), {
-          status: ` ${userData.firstname} ${userData.lastname} entered the library.`,
-          name: `${userData.firstname} ${userData.lastname}`,
-          date: now.toLocaleDateString(),
-          time: now.toLocaleTimeString(),
-          timein: now.toLocaleTimeString(),
-          timeout: null,
-          ["date/time"]: now.toLocaleString(),
-        });
-
-        await updateDoc(doc(db, "StudentAccount", docId), {
-          id: docRef.id,
-        });
-      } else {
-        fieldToUpdate = "timeout";
-
-        const id = userData.id;
-        console.log(id);
-        await updateDoc(doc(db, "StudentHistory", userData.id), {
-          timeout: now.toLocaleTimeString(),
-        });
-
-        await addDoc(collection(db, "StudentHistoryLeft"), {
-          status: ` ${userData.firstname} ${userData.lastname} left the library.`,
-          name: `${userData.firstname} ${userData.lastname}`,
-          timeouts: now.toLocaleTimeString(),
-          date: now.toLocaleDateString()
-        });
-        setTimeouts(now);
-      }
+      if (!uid) return;
 
       try {
-        await updateDoc(doc(db, "StudentAccount", docId), {
+        const now = new Date();
+        let fieldToUpdate = "";
+
+        const studentRef = doc(db, "StudentAccount", uid);
+        let studentSnap = await getDoc(studentRef);
+
+        let studentData = null;
+        let sourceCollection = "StudentAccount";
+
+        if (!studentSnap.exists()) {
+          const archiveRef = doc(db, "ArchiveAccount", uid);
+          const archiveSnap = await getDoc(archiveRef);
+
+          if (!archiveSnap.exists()) {
+            
+            return;
+          }
+
+          studentData = archiveSnap.data();
+          sourceCollection = "StudentAccount";
+
+          console.log(
+            `Found student in ArchiveAccount (${uid}) → transferring back...`
+          );
+
+          await setDoc(doc(db, "StudentAccount", uid), {
+            ...studentData,
+            setPermission: "Access Granted"
+          });
+
+          await deleteDoc(archiveRef);
+
+          
+          studentSnap = await getDoc(doc(db, "StudentAccount", uid));
+        } else {
+          studentData = studentSnap.data();
+          console.log(`Found student in StudentAccount (${uid})`);
+        }
+        const customDate = now.toLocaleString();
+        const safeId =
+          customDate.replace(/[\/\\#?]/g, "_") || `history_${Date.now()}`;
+
+        if (!studentData.timein) {
+          fieldToUpdate = "timein";
+
+          const docRef = await addDoc(collection(db, "StudentHistory"), {
+            status: ` ${studentData.firstname} ${studentData.lastname} entered the library.`,
+            name: `${studentData.firstname} ${studentData.lastname}`,
+            date: now.toLocaleDateString(),
+            time: now.toLocaleTimeString(),
+            timein: now.toLocaleTimeString(),
+            timeout: null,
+            ["date/time"]: now.toLocaleString(),
+          });
+
+          await updateDoc(doc(db, "StudentAccount", uid), {
+            id: docRef.id,
+          });
+        } else {
+          fieldToUpdate = "timeout";
+
+          const id = studentData.id;
+          await updateDoc(doc(db, "StudentHistory", id), {
+            timeout: now.toLocaleTimeString(),
+            archivetime: now.toLocaleTimeString(),
+          });
+
+          await addDoc(collection(db, "StudentHistoryLeft"), {
+            status: ` ${studentData.firstname} ${studentData.lastname} left the library.`,
+            name: `${studentData.firstname} ${studentData.lastname}`,
+            timeouts: now.toLocaleTimeString(),
+            date: now.toLocaleDateString(),
+          });
+
+          setTimeouts(now);
+        }
+
+        await updateDoc(doc(db, "StudentAccount", uid), {
           [fieldToUpdate]: now,
         });
-        console.log(`${fieldToUpdate} updated for doc:`, docId);
 
         if (fieldToUpdate === "timeout") {
           setTimeout(async () => {
             try {
-              await updateDoc(doc(db, "StudentAccount", docId), {
+              await updateDoc(doc(db, "StudentAccount", uid), {
                 timein: null,
                 timeout: null,
+                archivetime: now
               });
-
               setTimeouts("");
             } catch (error) {
-              console.error("Error po", error);
+              console.error("Error resetting time fields:", error);
             }
           }, 5000);
         }
       } catch (error) {
-        console.error("Error updating time:", error);
+        console.error("Error in updateTime:", error);
       }
     };
 
@@ -152,7 +190,6 @@ function EntanceSystem() {
     return () => clearTimeout(timer);
   }, [userData, uid]);
 
-  console.log(userData)
 
   return (
     <div className=" w-full flex h-[calc(100vh-0px)]">
