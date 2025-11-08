@@ -35,9 +35,9 @@ function BookManager() {
   const [updateAuthor, setUpdateAuthor] = useState("");
   const [currentUpdateDocId, setCurrentUpdateDocId] = useState(null);
   const [open, setOpen] = useState(false);
-  const [quantity, setQuantity] = useState(0)
+  const [quantity, setQuantity] = useState(0);
   const [open2, setOpen2] = useState(false);
-  const [updateQuantity, setUpdateQuantity] = useState("")
+  const [updateQuantity, setUpdateQuantity] = useState("");
 
   const options = [
     "Adventure",
@@ -187,9 +187,9 @@ function BookManager() {
       return;
     }
 
-    if(updateYear.length < 4) {
-      toast.error("The year must be 4 numbers at least.")
-      return
+    if (updateYear.length < 4) {
+      toast.error("The year must be 4 numbers at least.");
+      return;
     }
 
     setLoading2(true);
@@ -200,7 +200,7 @@ function BookManager() {
         author: updateAuthor,
         category: selected,
         year: updateYear,
-        quantity: updateQuantity
+        quantity: updateQuantity,
       });
 
       toast.success("Book updated successfully!");
@@ -247,7 +247,7 @@ function BookManager() {
               className="bg-green-600 px-5 py-2 font-kanit uppercase rounded-md shadow-md flex items-center cursor-pointer hover:bg-green-700 transition-all"
               onClick={() => setCreate(true)}
             >
-              Create
+              Add
             </div>
           </div>
         </div>
@@ -259,10 +259,9 @@ function BookManager() {
           transition={{ delay: 0.2, duration: 1, type: "spring" }}
         >
           <div className="flex">
-            <div className="grid w-full grid-cols-7 gap-2 uppercase border-b pb-3 text-base">
-              <div className="col-span-2">status</div>
-              <div className="text-center" >Quantity</div>
-              <div>Book Title</div>
+            <div className="grid w-full grid-cols-6 gap-2 uppercase border-b pb-3 text-base">
+              <div className="col-span-2">book title</div>
+              <div className="text-center">Quantity</div>
               <div className="">Time Borrowed</div>
               <div className="">Time Returned</div>
             </div>
@@ -278,41 +277,32 @@ function BookManager() {
                   <div key={historyx.id} className="flex border-b py-2 ">
                     <motion.div
                       key={index}
-                      className="grid grid-cols-7 items-center w-full gap-2 text-base"
+                      className="grid grid-cols-6 items-center w-full gap-2 text-base"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.1 }}
                     >
                       <div className="col-span-2">
-                        {historyx.currentBorrower ? (
-                          <div className="first-letter:uppercase text-red-600 font-bold uppercase ">
-                            Borrowed
-                          </div>
-                        ) : (
-                          <div className="text-green-600 font-bold uppercase">
-                            Available
-                          </div>
-                        )}
+                        <div>
+                          {historyx.status === "Borrowed" ? (
+                            <div
+                              className="text-black truncate text-ellipsis"
+                              title={historyx.title}
+                            >
+                              {historyx.title}
+                            </div>
+                          ) : (
+                            <div
+                              className="text-black truncate text-ellipsis"
+                              title={historyx.title}
+                            >
+                              {historyx.title}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="truncate text-center">
                         {historyx.quantity ? historyx.quantity : "0"}
-                      </div>
-                      <div>
-                        {historyx.status === "Borrowed" ? (
-                          <div
-                            className="text-black truncate text-ellipsis"
-                            title={historyx.title}
-                          >
-                            {historyx.title}
-                          </div>
-                        ) : (
-                          <div
-                            className="text-black truncate text-ellipsis"
-                            title={historyx.title}
-                          >
-                            {historyx.title}
-                          </div>
-                        )}
                       </div>
                       <div className="truncate">
                         {historyx.dateBorrowed?.toDate
@@ -578,7 +568,7 @@ function BookManager() {
                         />
                       </div>
 
-                       <div>
+                      <div>
                         <div>Quantity</div>
                         <input
                           value={updateQuantity}

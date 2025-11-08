@@ -1,0 +1,62 @@
+author
+"Jane Austen"
+(string)
+
+
+category
+"Classicxs"
+(string)
+
+
+currentBorrower
+"Harvey Pilon"
+(string)
+
+
+dateBorrowed
+November 5, 2025 at 7:00:39 PM UTC+8
+(timestamp)
+
+
+dateReturn
+November 6, 2025 at 3:58:00 PM UTC+8
+(timestamp)
+
+
+datetime
+"11/5/2025, 8:18:14 PM"
+(string)
+
+
+email
+"pilonharvey4@gmail.com"
+(string)
+
+
+id
+"11999"
+(string)
+
+
+quantity
+"1"
+(string)
+
+
+returnEmail
+true
+(boolean)
+
+
+status
+"Reserved"
+(string)
+
+
+title
+"Pride and Prejudike"
+(string)
+
+
+year
+"3213"

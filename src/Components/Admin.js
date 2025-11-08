@@ -121,7 +121,7 @@ function Admin() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://10.222.56.131/uid");
+        const res = await fetch("http://10.251.21.131/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -209,7 +209,7 @@ function Admin() {
       });
 
       const response = await fetch(
-        `http://10.222.56.131/write?accesslevel=${accessLevel}&permission=${permission}`
+        `http://10.251.21.131/write?accesslevel=${accessLevel}&permission=${permission}`
       );
       const result = await response.json();
 

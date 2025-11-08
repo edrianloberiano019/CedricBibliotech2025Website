@@ -33,11 +33,14 @@ function Borrowing() {
   const [choseDate2, setChoseDate2] = useState("");
   const [choseTime2, setChoseTime2] = useState("");
   const [update, setUpdate] = useState(false);
-  const [uid, setUid] = useState("169A7DAA");
+  const [uid, setUid] = useState("");
   const [id, setID] = useState("");
   const [userData, setUserData] = useState(null);
   const [modalReserve, setModalReserve] = useState(false);
   const [docId, setDocId] = useState("");
+  // Booked/borrowed modal state
+  const [modalBorrowed, setModalBorrowed] = useState(false);
+  const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [scheduleBorrow, setScheduleBorrow] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const globaldatetime =
@@ -120,7 +123,7 @@ function Borrowing() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://10.222.56.131/uid");
+        const res = await fetch("http://10.251.21.131/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
@@ -218,6 +221,7 @@ function Borrowing() {
 
     const dateObj = new Date(`${choseDate}T${choseTime}`);
     const userRef = doc(db, "BooksData", document);
+    const bookedCollection = collection(db, "BookedBook");
     const userRef2 = collection(db, "BooksHistory");
     const now = new Date();
 
@@ -231,7 +235,7 @@ function Borrowing() {
       }
 
       const bookData = bookSnap.data();
-      if (bookData.quantity === 0) {
+      if (Number(bookData.quantity) === 0) {
         toast.error("Cannot borrow — no copies available!");
         setLoading2(false);
         setLoading3(false);
@@ -239,13 +243,26 @@ function Borrowing() {
       }
 
       if (choseDate && choseTime) {
+        // decrement quantity and set status only to "Out of Stock" when it reaches 0
+        const newQty = Number(bookData.quantity) - 1;
         await updateDoc(userRef, {
-          status: "Borrowed",
+          quantity: newQty,
+          status: newQty === 0 ? "Out of Stock" : "Available",
           dateReturn: dateObj,
           dateBorrowed: now,
           currentBorrower: borrowName,
           email: email,
-          quantity: bookData.quantity - 1,
+        });
+
+        // add a BookedBook record for this borrow
+        await addDoc(bookedCollection, {
+          bookId: document,
+          title: bookTitle,
+          borrower: borrowName,
+          email: email,
+          dateBorrowed: now,
+          dateReturn: dateObj,
+          status: "Borrowed",
         });
 
         await addDoc(userRef2, {
@@ -301,10 +318,10 @@ function Borrowing() {
   const sendEmail = () => {
     const now = new Date();
 
-    if (!choseDate || !choseTime) {
-      alert("Please select both date and time");
-      return;
-    }
+    // if (!choseDate || !choseTime) {
+    //   alert("Please select both date and time");
+    //   return;
+    // }
 
     const dateTimeString = `${choseDate}T${choseTime}`;
     const datetime = new Date(dateTimeString);
@@ -346,8 +363,10 @@ function Borrowing() {
     const fetchReservedBooks = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "ReservedBooks"));
+        // preserve the Firestore document id in docId so it cannot be overwritten
+        // by a data field named "id"
         const booksData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
+          docId: doc.id,
           ...doc.data(),
         }));
         setReservedBooks(booksData);
@@ -363,18 +382,40 @@ function Borrowing() {
 
   const ClaimBorrow = async (book) => {
     try {
-      const bookRef = doc(db, "ReservedBooks", book.docId || book.id);
+      if (!book?.title) {
+        toast.error("Book title not found.");
+        return;
+      }
+
+      // determine datetime from chosen date/time
+      let datetime = null;
+      const d = (choseDate2 || "").trim();
+      const t = (choseTime2 || "").trim();
+      if (d && t) {
+        datetime = new Date(`${d}T${t}`);
+      } else {
+        toast.error("Please select both date and time.");
+        return;
+      }
+
+      if (!datetime || isNaN(datetime.getTime())) {
+        toast.error("Invalid date or time format. Please select a valid date and time.");
+        return;
+      }
+
+      // use book title as document ID
+      const bookRef = doc(db, "ReservedBooks", book.title);
       await updateDoc(bookRef, {
         status: "Claimed",
         dateBorrowed: new Date().toLocaleString(),
-        dateReturn: `${choseDate2} ${choseTime2}`,
+        dateReturn: datetime.toLocaleString(),
       });
 
       toast.success(`"${book.title}" has been successfully claimed.`);
 
       const snapshot = await getDocs(collection(db, "ReservedBooks"));
       const updatedList = snapshot.docs.map((doc) => ({
-        docId: doc.id,
+        id: doc.id,
         ...doc.data(),
       }));
       setReservedBooks(updatedList);
@@ -384,13 +425,67 @@ function Borrowing() {
     }
   };
 
-  const next2 = () => {
-    if (choseDate2 && choseTime2) {
-      setScheduleBorrow(false);
-      setBorrowFinal(true);
-    } else {
-      toast.error("Please select date and time to proceed.");
+  // return a booked/booked-book record (restore quantity in BooksData, delete BookedBook, add history)
+  const returnBookedBook = async (b) => {
+    try {
+      const bookedRef = doc(db, "BookedBook", b.id);
+      const bookedSnap = await getDoc(bookedRef);
+      if (!bookedSnap.exists()) {
+        toast.error("Booked record not found.");
+        return;
+      }
+
+      const booked = bookedSnap.data();
+      const originalBookId = booked.bookId;
+
+      // restore quantity on BooksData
+      if (originalBookId) {
+        const bookRef = doc(db, "BooksData", originalBookId);
+        const bookSnap = await getDoc(bookRef);
+        if (bookSnap.exists()) {
+          const currentQty = Number(bookSnap.data().quantity) || 0;
+          const newQty = currentQty + 1;
+          await updateDoc(bookRef, {
+            quantity: newQty.toString(),
+            status: newQty === 0 ? "Out of Stock" : "Available",
+          });
+        }
+      }
+
+      await deleteDoc(bookedRef);
+
+      await addDoc(collection(db, "BooksHistory"), {
+        status: `Returned the book named "${booked.title}"`,
+        date: new Date().toLocaleString(),
+      });
+
+      toast.success(`"${booked.title}" returned successfully.`);
+      setUpdate(true);
+
+      const snap = await getDocs(collection(db, "BookedBook"));
+      setBorrowedBooks(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error("Error returning booked book:", err);
+      toast.error("Failed to return booked book.");
     }
+  };
+
+  const next2 = () => {
+    if (!choseDate2 || !choseTime2) {
+      toast.error("Please select both date and time to proceed.");
+      return;
+    }
+
+    const dateTimeString = `${choseDate2}T${choseTime2}`;
+    const datetime = new Date(dateTimeString);
+
+    if (isNaN(datetime.getTime())) {
+      toast.error("Invalid date or time format.");
+      return;
+    }
+
+    setScheduleBorrow(false);
+    setBorrowFinal(true);
   };
 
   useEffect(() => {
@@ -428,6 +523,24 @@ function Borrowing() {
     verifyCard();
   }, [uid]);
 
+  // Add this useEffect after your other useEffect hooks
+  useEffect(() => {
+    const fetchBookedBooks = async () => {
+      try {
+        const snap = await getDocs(collection(db, "BookedBook"));
+        const bookedList = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setBorrowedBooks(bookedList);
+      } catch (error) {
+        console.error("Error fetching booked books:", error);
+      }
+    };
+
+    fetchBookedBooks();
+  }, [update]); // Re-fetch when update changes
+
   return (
     <motion.div
       className="p-10 h-[calc(100vh-1px)] overflow-hidden"
@@ -457,6 +570,12 @@ function Borrowing() {
               className={`bg-yellow-600 border-2 border-yellow-900 rounded-md px-2 shadow-md font-bold uppercase p-1 cursor-pointer `}
             >
               Reserved Books
+            </div>
+            <div
+              onClick={() => setModalBorrowed(true)}
+              className={`bg-yellow-600 border-2 border-yellow-900 rounded-md px-2 shadow-md font-bold uppercase p-1 cursor-pointer `}
+            >
+              Booked Books
             </div>
             <div
               onClick={() => setFilterStatus("All")}
@@ -518,9 +637,9 @@ function Borrowing() {
                   >
                     <div className="col-span-2">{book.title}</div>
                     <div>
-                      {book.status === "Borrowed" ? (
-                        <div className="text-red-600 font-bold uppercase">
-                          Borrowed
+                      {Number(book.quantity) === 0 ? (
+                        <div className="text-red-600 truncate font-bold uppercase">
+                          Out of stock
                         </div>
                       ) : (
                         <div className="text-green-600 font-bold uppercase">
@@ -536,34 +655,21 @@ function Borrowing() {
 
                     <div>{book.year}</div>
                     <div>
-                      {book.status === "Available" ? (
+                      {/* enable borrow as long as numeric quantity > 0 (regardless of book.status) */}
+                      {Number(book.quantity) > 0 ? (
                         <div
                           onClick={() => {
-                            if (book.quantity > 0) {
-                              setModalBorrow(true);
-                              setDocumentID(book.id);
-                              setBookTitle(book.title);
-                            }
+                            setModalBorrow(true);
+                            setDocumentID(book.id);
+                            setBookTitle(book.title);
                           }}
-                          className={`" ${
-                            book.quantity > 0
-                              ? "cursor-pointer bg-green-700 hover:bg-green-800 text-white"
-                              : "cursor-not-allowed bg-gray-300 text-gray-600"
-                          } py-1 px-3  uppercase text-sm text-center   transition-all rounded-md shadow-md "`}
+                          className="cursor-pointer bg-green-700 hover:bg-green-800 text-white py-1 px-3 uppercase text-sm text-center transition-all rounded-md shadow-md"
                         >
                           borrow
                         </div>
                       ) : (
-                        <div
-                          onClick={() => {
-                            setModalView(true);
-                            searchDetails(book.title);
-                            setDocumentID(book.id);
-                            setBookTitle(book.title);
-                          }}
-                          className="py-1 px-3 cursor-pointer uppercase text-sm text-center text-white bg-blue-700 hover:bg-blue-800 transition-all rounded-md shadow-md"
-                        >
-                          view
+                        <div className="py-1 px-3 uppercase text-sm text-center text-white bg-gray-400 rounded-md shadow-md cursor-default">
+                          out of stock
                         </div>
                       )}
                     </div>
@@ -747,10 +853,9 @@ function Borrowing() {
                   </div>
 
                   <div className="p-4 rounded-md flex flex-col text-white">
-                    <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-t-md border-b text-sm font-bold">
+                    <div className="grid grid-flow-row gap-6 grid-cols-3 bg-white text-black px-4 py-2 rounded-t-md border-b text-sm font-bold">
                       <div>Name</div>
                       <div>Book</div>
-                      <div>Date/Time Reserved</div>
                       <div className="text-right">Action</div>
                     </div>
                     {reservedBooks.length > 0 ? (
@@ -759,13 +864,10 @@ function Borrowing() {
                           key={`${book.docId || ""}-${book.id || ""}-${
                             book.title || ""
                           }`}
-                          className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 border-b text-sm hover:bg-[#f5f5f5] transition"
+                          className="grid grid-flow-row gap-6 grid-cols-3 bg-white text-black px-4 py-2 border-b text-sm hover:bg-[#f5f5f5] transition"
                         >
                           <div className="truncate">{book.currentBorrower}</div>
                           <div className="truncate">{book.title}</div>
-                          <div className="truncate">
-                            {book.datetime ? book.datetime : "No date set"}
-                          </div>
 
                           <div className="flex justify-end">
                             {book.status === "Reserved" ? (
@@ -783,8 +885,12 @@ function Borrowing() {
                                 className="px-4 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition"
                                 onClick={async () => {
                                   try {
+                                    // use the actual reserved document id (docId) when deleting;
+                                    // fall back to any id field if present, or title as last resort
+                                    const reservedDocId =
+                                      book.docId || book.id || book.title;
                                     await deleteDoc(
-                                      doc(db, "ReservedBooks", book.title)
+                                      doc(db, "ReservedBooks", reservedDocId)
                                     );
 
                                     const bookRef = doc(
@@ -889,7 +995,7 @@ function Borrowing() {
                     className="rounded-lg ml-4 focus:outline-none text-black px-8 py-1 text-lg"
                     value={choseTime2}
                     min={
-                      choseDate2 === new Date().toISOString().split("T")[0]
+                      choseTime2 === new Date().toISOString().split("T")[0]
                         ? new Date().toISOString().split("T")[1].slice(0, 5)
                         : undefined
                     }
@@ -960,7 +1066,7 @@ function Borrowing() {
                             <ClipLoader size={20} />
                           </div>
                         ) : (
-                          <div className="ml-2"></div>
+                          <div className="ml-2">{name}</div>
                         )}
                       </div>
                     </div>
@@ -987,7 +1093,6 @@ function Borrowing() {
                           <div
                             onClick={() => {
                               ClaimBorrow(selectedBook);
-                              sendEmail();
                               setBorrowFinal(false);
                               setScheduleBorrow(false);
                               setUserData(null);
@@ -1143,9 +1248,92 @@ function Borrowing() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Booked / Borrowed modal (reads BookedBook collection) */}
+        <AnimatePresence>
+          {modalBorrowed && (
+            <motion.div
+              className="absolute flex justify-center items-center left-0 top-0 text-2xl z-50 w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div
+                onClick={() => setModalBorrowed(false)}
+                className="z-30 bg-[#00000094] cursor-pointer backdrop-blur-sm w-full h-full absolute"
+              ></div>
+
+              <div className="bg-white relative z-40 p-5 rounded-2xl shadow-xl max-h-[80vh] overflow-y-auto w-[90%] md:w-[70%]">
+                <div className="bg-[#f5b066] p-4 rounded-md shadow-xl text-black">
+                  <div className="uppercase text-black flex justify-center font-black text-3xl px-5">
+                    BOOKED BOOKS
+                  </div>
+
+                  <div className="p-4 rounded-md flex flex-col text-white">
+                    <div className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 rounded-t-md border-b text-sm font-bold">
+                      <div>Name</div>
+                      <div>Book</div>
+                      <div>D/T to Return</div>
+                      <div className="text-right">Action</div>
+                    </div>
+
+                    {borrowedBooks.length > 0 ? (
+                      borrowedBooks.map((b) => (
+                        <div
+                          key={b.id}
+                          className="grid grid-flow-row gap-6 grid-cols-4 bg-white text-black px-4 py-2 border-b text-sm hover:bg-[#f5f5f5] transition"
+                        >
+                          <div className="truncate">
+                            {b.borrower || b.currentBorrower}
+                          </div>
+                          <div className="truncate">{b.title}</div>
+                          <div className="">
+                            {b.dateReturn
+                              ? b.dateReturn?.toDate
+                                ? b.dateReturn.toDate().toLocaleString()
+                                : new Date(b.dateReturn).toLocaleString()
+                              : "No date set"}
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              className="px-4 py-1 rounded-md bg-orange-600 text-white hover:bg-orange-700 transition"
+                              onClick={() => returnBookedBook(b)}
+                            >
+                              Return
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-white text-black px-4 py-2 text-center text-sm">
+                        No booked books found.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-full mt-3 justify-end flex text-base">
+                    <div
+                      onClick={() => setModalBorrowed(false)}
+                      className="text-white rounded-md border-2 border-red-800 hover:bg-red-700 transition-all bg-red-600 cursor-pointer px-6 py-2"
+                    >
+                      Back
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
 }
 
 export default Borrowing;
+
+
+
+
+

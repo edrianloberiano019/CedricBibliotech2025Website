@@ -25,7 +25,7 @@ function EntanceSystem() {
   useEffect(() => {
     const fetchUID = async () => {
       try {
-        const res = await fetch("http://10.222.56.125/uid");
+        const res = await fetch("http://10.251.21.125/uid");
         const data = await res.json();
         if (data.uid) {
           setUid(data.uid.toUpperCase());
