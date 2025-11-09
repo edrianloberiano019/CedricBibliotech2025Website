@@ -12,6 +12,7 @@ import {
   documentId,
   getDoc,
   deleteDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-toastify";
@@ -221,7 +222,6 @@ function Borrowing() {
 
     const dateObj = new Date(`${choseDate}T${choseTime}`);
     const userRef = doc(db, "BooksData", document);
-    const bookedCollection = collection(db, "BookedBook");
     const userRef2 = collection(db, "BooksHistory");
     const now = new Date();
 
@@ -235,34 +235,21 @@ function Borrowing() {
       }
 
       const bookData = bookSnap.data();
-      if (Number(bookData.quantity) === 0) {
+      if (bookData.quantity === 0) {
         toast.error("Cannot borrow — no copies available!");
         setLoading2(false);
         setLoading3(false);
         return;
       }
 
-      if (choseDate && choseTime) {
-        // decrement quantity and set status only to "Out of Stock" when it reaches 0
-        const newQty = Number(bookData.quantity) - 1;
+      if (choseDate2 && choseTime2) {
         await updateDoc(userRef, {
-          quantity: newQty,
-          status: newQty === 0 ? "Out of Stock" : "Available",
+          status: "Borrowed",
           dateReturn: dateObj,
           dateBorrowed: now,
           currentBorrower: borrowName,
           email: email,
-        });
-
-        // add a BookedBook record for this borrow
-        await addDoc(bookedCollection, {
-          bookId: document,
-          title: bookTitle,
-          borrower: borrowName,
-          email: email,
-          dateBorrowed: now,
-          dateReturn: dateObj,
-          status: "Borrowed",
+          quantity: bookData.quantity - 1,
         });
 
         await addDoc(userRef2, {
@@ -270,6 +257,17 @@ function Borrowing() {
           date: now.toLocaleString(),
           indicator: "borrowed",
         });
+
+        // Increment student's borrow count
+        try {
+          if (docId) {
+            await updateDoc(doc(db, "StudentAccount", docId), {
+              bookBorrowedCount: increment(1),
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to increment bookBorrowedCount:", e);
+        }
 
         toast.success("Successfully borrowed!");
         setModalTap(false);
@@ -382,40 +380,72 @@ function Borrowing() {
 
   const ClaimBorrow = async (book) => {
     try {
-      if (!book?.title) {
-        toast.error("Book title not found.");
-        return;
-      }
-
-      // determine datetime from chosen date/time
-      let datetime = null;
-      const d = (choseDate2 || "").trim();
-      const t = (choseTime2 || "").trim();
-      if (d && t) {
-        datetime = new Date(`${d}T${t}`);
-      } else {
+      if (!choseDate2 || !choseTime2) {
         toast.error("Please select both date and time.");
         return;
       }
 
-      if (!datetime || isNaN(datetime.getTime())) {
-        toast.error("Invalid date or time format. Please select a valid date and time.");
+      const dateTimeString = `${choseDate2}T${choseTime2}`;
+      const datetime = new Date(dateTimeString);
+
+      if (isNaN(datetime.getTime())) {
+        toast.error("Invalid date or time format.");
         return;
       }
 
-      // use book title as document ID
-      const bookRef = doc(db, "ReservedBooks", book.title);
+      const bookRef = doc(db, "ReservedBooks", book.docId || book.id);
       await updateDoc(bookRef, {
         status: "Claimed",
         dateBorrowed: new Date().toLocaleString(),
         dateReturn: datetime.toLocaleString(),
       });
 
+      // Send email notification upon successful claim
+      emailjs
+        .send(
+          "service_xq3itn4",
+          "template_m7hwnqb",
+          {
+            names: book.currentBorrower || namesecond,
+            name: "Caloocan City E-Library",
+            book: book.title,
+            email: book.email || email,
+            from_name: "React User",
+            hatdog: "Due date: ",
+            status: "borrowed",
+            returntime:
+              datetime.toLocaleDateString() +
+              " " +
+              datetime.toLocaleTimeString(),
+            message: `Thank you for borrowing ${book.title} from the Caloocan City E-Library. Please take care of it and return it on or before the due date so others can also enjoy it. Happy reading!`,
+            time:
+              new Date().toLocaleDateString() +
+              " " +
+              new Date().toLocaleTimeString(),
+          },
+          "5JJ4BU1mfv1J_lZ3I"
+        )
+        .catch((err) => {
+          console.error("Email send failed:", err);
+          toast.error("Failed to send email notification.");
+        });
+
+      // Increment student's borrow count
+      try {
+        if (docId) {
+          await updateDoc(doc(db, "StudentAccount", docId), {
+            bookBorrowedCount: increment(1),
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to increment bookBorrowedCount:", e);
+      }
+
       toast.success(`"${book.title}" has been successfully claimed.`);
 
       const snapshot = await getDocs(collection(db, "ReservedBooks"));
       const updatedList = snapshot.docs.map((doc) => ({
-        id: doc.id,
+        docId: doc.id,
         ...doc.data(),
       }));
       setReservedBooks(updatedList);
@@ -505,8 +535,13 @@ function Borrowing() {
           return;
         }
 
-        const student = snapshot.docs[0].data();
+        const studentDoc = snapshot.docs[0];
+        const student = studentDoc.data();
         const fullName = `${student.firstname} ${student.lastname}`.trim();
+
+        setName(fullName);
+        // capture the StudentAccount document id for later increments
+        setDocId(studentDoc.id);
 
         if (fullName !== selectedBook.currentBorrower.trim()) {
           toast.error("This card does not belong to the borrower.");
@@ -530,7 +565,7 @@ function Borrowing() {
         const snap = await getDocs(collection(db, "BookedBook"));
         const bookedList = snap.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
         setBorrowedBooks(bookedList);
       } catch (error) {
@@ -1332,8 +1367,3 @@ function Borrowing() {
 }
 
 export default Borrowing;
-
-
-
-
-
